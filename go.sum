@@ -1,0 +1,4 @@
+github.com/MarinX/keylogger v0.0.0-20210528193429-a54d7834cc1a h1:ItKXWegGGThcahUf+ylKFa5pwqkRJofaOyeGdzwO2mM=
+github.com/MarinX/keylogger v0.0.0-20210528193429-a54d7834cc1a/go.mod h1:aKzZ7D15UvH5LboXkeLmcNi+s/f805vUfB+BfW1fqd4=
+github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
+github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
