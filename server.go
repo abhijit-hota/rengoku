@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
-	KL "github.com/MarinX/keylogger"
-	CB "github.com/atotto/clipboard"
+	"github.com/atotto/clipboard"
+	"golang.design/x/hotkey"
+	"golang.design/x/hotkey/mainthread"
 )
 
 func dataserver() {
@@ -21,60 +21,23 @@ func dataserver() {
 	log.Fatal(err)
 }
 
-func getKeylogger() *KL.KeyLogger {
-	// Find keyboard
-	keyboard := KL.FindKeyboardDevice()
-	if len(keyboard) <= 0 {
-		log.Fatal("No keyboard found. You will need to provide manual input path.")
-	} else {
-		log.Println(keyboard)
+func fn() {
+	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.Key(0x2f))
+	err := hk.Register()
+	if err != nil {
+		return
 	}
 
-	// Create a keylogger
-	keylogger, err := KL.New(keyboard)
-	if err != nil {
-		log.Fatal(err)
+	for range hk.Keydown() {
+		text, err := clipboard.ReadAll()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(text)
 	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	return keylogger
 }
 
 func main() {
-
 	go dataserver()
-
-	keylogger := getKeylogger()
-	defer keylogger.Close()
-
-	shortcuts := map[string]bool{"CTRL": false, "SHIFT": false, "/": false}
-
-	in := keylogger.Read()
-	for i := range in {
-		// Listen to only key press & release events
-		if i.Type == KL.EvKey && (i.KeyPress() || i.KeyRelease()) {
-			gen := strings.Split(i.KeyString(), "_")
-			key := gen[len(gen)-1]
-
-			if _, ok := shortcuts[key]; ok {
-				shortcuts[key] = i.KeyPress()
-			}
-
-			allPressed := true
-			for _, v := range shortcuts {
-				allPressed = (allPressed && v)
-			}
-			if allPressed {
-				str, err := CB.ReadAll()
-				if err != nil {
-					panic(err)
-				}
-
-				fmt.Println("Shortcut!")
-				fmt.Println(str)
-			}
-		}
-	}
+	mainthread.Init(fn)
 }
