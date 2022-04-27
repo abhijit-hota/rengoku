@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"io"
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -14,7 +16,7 @@ import (
 	"golang.design/x/hotkey/mainthread"
 )
 
-func handleErr(err error) {
+func handle(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -22,9 +24,15 @@ func handleErr(err error) {
 
 var db *sql.DB
 
-func GetTitleFromURL(text string) (title string) {
-	res, err := http.Get(text)
-	handleErr(err)
+func GetTitleFromURL(url string) (title string, err error) {
+	url = strings.TrimSpace(url)
+	if !(strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "https://")) {
+		url = "https://" + url
+	}
+	res, err := http.Get(url)
+	if err != nil {
+		return "", errors.New("Invalid URL.")
+	}
 
 	defer res.Body.Close()
 	resBytes, err := io.ReadAll(res.Body)
@@ -32,20 +40,24 @@ func GetTitleFromURL(text string) (title string) {
 	re := regexp.MustCompile("<title>(.+)</title>")
 
 	title = re.FindStringSubmatch(str)[1]
-	return
+	return title, nil
 }
 
 func SaveToDB(url string) {
-	GetTitleFromURL(url)
-	title := GetTitleFromURL(url)
+	title, err := GetTitleFromURL(url)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	stmt, err := db.Prepare("INSERT INTO LINKS (url, title, created, last_updated) VALUES (?, ?, ?, ?)")
-	handleErr(err)
+	handle(err)
 	defer stmt.Close()
 
 	now := time.Now().Unix()
 	_, err = stmt.Exec(url, title, now, now)
-	handleErr(err)
+	handle(err)
 
 	log.Println("Saved URL.")
 }
@@ -54,7 +66,7 @@ func InitializeDB() {
 	var err error
 
 	db, err = sql.Open("sqlite3", "./links.db")
-	handleErr(err)
+	handle(err)
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS links (
@@ -65,7 +77,7 @@ func InitializeDB() {
 			last_updated integer
 		)
 	`)
-	handleErr(err)
+	handle(err)
 }
 
 func ListenForHotKey() {
@@ -77,9 +89,7 @@ func ListenForHotKey() {
 
 	for range hk.Keydown() {
 		url, err := clipboard.ReadAll()
-		if err != nil {
-			panic(err)
-		}
+		handle(err)
 		SaveToDB(url)
 	}
 }
