@@ -11,7 +11,8 @@ var db *sql.DB
 
 func InitializeDB() (db *sql.DB) {
 	var err error
-	db, err = sql.Open("sqlite3", "../links.db")
+	conf := utils.GetConfig()
+	db, err = sql.Open("sqlite3", conf.DatabasePath)
 	utils.Must(err)
 
 	_, err = db.Exec(`

@@ -4,7 +4,9 @@ go 1.18
 
 require (
 	fyne.io/fyne/v2 v2.1.4
+	github.com/BurntSushi/toml v1.1.0
 	github.com/atotto/clipboard v0.1.4
+	github.com/gin-gonic/gin v1.7.7
 	github.com/mattn/go-sqlite3 v1.14.12
 )
 
@@ -13,7 +15,6 @@ require (
 	github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-gl/gl v0.0.0-20210813123233-e4099ee2221f // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211024062804-40e447a793be // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
