@@ -12,18 +12,18 @@ var db *sql.DB
 func InitializeDB() (db *sql.DB) {
 	var err error
 	db, err = sql.Open("sqlite3", "../links.db")
-	utils.Handle(err)
+	utils.Must(err)
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS links (
 			id INTEGER NOT NULL PRIMARY KEY, 
-			title text, 
-			url text, 
-			created integer, 
-			last_updated integer
+			title TEXT, 
+			url TEXT, 
+			created INTEGER, 
+			last_updated INTEGER
 		)
-		`)
-	utils.Handle(err)
+	`)
+	utils.Must(err)
 	return db
 }
 

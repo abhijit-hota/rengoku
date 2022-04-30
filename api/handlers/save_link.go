@@ -47,12 +47,12 @@ func SaveToDB(ctx *gin.Context) {
 	}
 
 	stmt, err := db.Prepare("INSERT INTO LINKS (url, title, created, last_updated) VALUES (?, ?, ?, ?)")
-	utils.Handle(err)
+	utils.Must(err)
 	defer stmt.Close()
 
 	now := time.Now().Unix()
 	_, err = stmt.Exec(url, title, now, now)
-	utils.Handle(err)
+	utils.Must(err)
 
 	ctx.String(http.StatusOK, "Saved URL.")
 }
