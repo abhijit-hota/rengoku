@@ -16,12 +16,17 @@ func InitializeDB() (db *sql.DB) {
 	utils.Must(err)
 
 	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS links (
+		CREATE TABLE IF NOT EXISTS bookmarks (
 			id INTEGER NOT NULL PRIMARY KEY, 
-			title TEXT, 
-			url TEXT, 
+			meta INTEGER,
+			url TEXT,
 			created INTEGER, 
 			last_updated INTEGER
+		);
+		CREATE TABLE IF NOT EXISTS meta (
+			title TEXT,
+			description TEXT,
+			favicon BLOB
 		)
 	`)
 	utils.Must(err)

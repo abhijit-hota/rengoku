@@ -8,7 +8,7 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.POST("/add", handlers.SaveToDB)
+	router.POST("/add", handlers.AddBookmark)
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
