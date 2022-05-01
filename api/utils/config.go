@@ -7,6 +7,7 @@ import (
 type Config struct {
 	DatabasePath      string
 	ShouldSaveOffline bool
+	AutofillURLData   bool
 }
 
 var config Config

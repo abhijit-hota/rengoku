@@ -10,8 +10,8 @@
 
 ## Todo
 
-- [] Update /add route to support title, meta data, etc, auto fill missing data[1]
-- [] 1) Auto fill missing data configuration
+- [x] Update /add route to support title, meta data, etc, auto fill missing data[1]
+- [x] 1) Auto fill missing data configuration
 - [] Add support for tags
 	- [] tags table?
 - [] Add /get route

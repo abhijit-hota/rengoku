@@ -5,6 +5,7 @@ import (
 	DB "bingo/api/db"
 	"bingo/api/utils"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +15,12 @@ import (
 
 var db *sql.DB = DB.GetDB()
 
+var config utils.Config
+
+func init() {
+	config = utils.GetConfig()
+}
+
 func AddBookmark(ctx *gin.Context) {
 	var json DB.Bookmark
 
@@ -21,9 +28,12 @@ func AddBookmark(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := common.GetMetadata(json.URL, &json.Meta); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	fmt.Println(config)
+	if config.AutofillURLData {
+		if err := common.GetMetadata(json.URL, &json.Meta); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	statement, err := db.Prepare("INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)")
