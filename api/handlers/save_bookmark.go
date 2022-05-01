@@ -17,7 +17,7 @@ import (
 
 var db *sql.DB = DB.GetDB()
 
-func getMetadataFromURL(url string, availableMetadata DB.Meta) (meta *DB.Meta, err error) {
+func getMetadataFromURL(url string, metadata *DB.Meta) (err error) {
 
 	url = strings.TrimSpace(url)
 	if !(strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "https://")) {
@@ -26,19 +26,18 @@ func getMetadataFromURL(url string, availableMetadata DB.Meta) (meta *DB.Meta, e
 	// TODO check url before passing into http
 	res, err := http.Get(url)
 	if err != nil {
-		return nil, errors.New("Invalid URL.")
+		return errors.New("Invalid URL.")
 	}
 
 	defer res.Body.Close()
 
-	hm := new(DB.Meta)
 	data, _ := io.ReadAll(res.Body)
 	headRegex := regexp.MustCompile("<head>((.|\n|\r\n)+)</head>")
 
 	head := string(headRegex.Find(data))
 	head = strings.ReplaceAll(head, "\n", "")
 
-	if availableMetadata.Title == "" {
+	if metadata.Title == "" {
 		titleRegex := regexp.MustCompile(`<title.*>(.+)<\/title>`)
 		metaTitleRegex := regexp.MustCompile(`<meta.*?property="og:title".*?content="(.+?)".*?\/?>`)
 		titleMatches := titleRegex.FindStringSubmatch(head)
@@ -47,41 +46,38 @@ func getMetadataFromURL(url string, availableMetadata DB.Meta) (meta *DB.Meta, e
 		}
 
 		if len(titleMatches) == 0 {
-			hm.Title = ""
+			metadata.Title = ""
 		} else {
-			hm.Title = titleMatches[1]
+			metadata.Title = titleMatches[1]
 		}
-	} else {
-		hm.Title = availableMetadata.Title
 	}
 
-	if availableMetadata.Description == "" {
-
+	if metadata.Description == "" {
 		descriptionRegex := regexp.MustCompile(`<meta.*?(?:name="description"|property="og:description").*?content="(.*?)".*?\/>`)
 		descMatches := descriptionRegex.FindStringSubmatch(head)
 		if len(descMatches) == 0 {
-			hm.Description = ""
+			metadata.Description = ""
 		} else {
-			hm.Description = descMatches[1]
+			metadata.Description = descMatches[1]
 		}
-	} else {
-		hm.Description = availableMetadata.Description
 	}
-	hm.Favicon = availableMetadata.Favicon
-	return hm, nil
+	return nil
 }
 
 func AddBookmark(ctx *gin.Context) {
 	var json DB.Bookmark
+
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	meta, err := getMetadataFromURL(json.URL, json.Meta)
+	err := getMetadataFromURL(json.URL, &json.Meta)
+
 	statement, err := db.Prepare("INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)")
 	utils.Must(err)
 	defer statement.Close()
-	info, err := statement.Exec(meta.Title, meta.Description, meta.Favicon)
+
+	info, err := statement.Exec(json.Meta.Title, json.Meta.Description, json.Meta.Favicon)
 	metaID, _ := info.LastInsertId()
 
 	if err != nil {
@@ -95,8 +91,11 @@ func AddBookmark(ctx *gin.Context) {
 	defer statement.Close()
 
 	now := time.Now().Unix()
+	json.Created = now
+	json.LastUpdated = now
+
 	_, err = statement.Exec(json.URL, metaID, now, now)
 	utils.Must(err)
 
-	ctx.String(http.StatusOK, "Saved URL.")
+	ctx.JSON(http.StatusOK, json)
 }

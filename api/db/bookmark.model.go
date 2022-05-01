@@ -9,6 +9,6 @@ type Meta struct {
 type Bookmark struct {
 	Meta        Meta   `json:"meta"`
 	URL         string `json:"url" binding:"required"`
-	Created     int    `json:"created"`
-	LastUpdated int    `json:"last_updated"`
+	Created     int64  `json:"created"`
+	LastUpdated int64  `json:"last_updated"`
 }
