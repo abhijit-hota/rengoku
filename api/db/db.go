@@ -26,7 +26,7 @@ func InitializeDB() (db *sql.DB) {
 		CREATE TABLE IF NOT EXISTS meta (
 			title TEXT,
 			description TEXT,
-			favicon BLOB
+			favicon TEXT
 		)
 	`)
 	utils.Must(err)

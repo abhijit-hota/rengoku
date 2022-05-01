@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
-	"io"
+	"golang.org/x/net/html"
 )
 
 func main() {
@@ -66,35 +68,58 @@ type HTMLMeta struct {
 	Favicon     string `json:"favicon"`
 }
 
+func attrValue(attributes []html.Attribute, lookingFor string) string {
+	var key string
+
+	var content string
+	if lookingFor == "icon" {
+		key = "rel"
+		content = "href"
+	} else {
+		key = "property"
+		content = "content"
+	}
+
+	foundProp := false
+	for _, attr := range attributes {
+		if (attr.Key == key || (lookingFor != "icon" && attr.Key == "name")) && strings.Contains(attr.Val, lookingFor) {
+			foundProp = true
+		}
+		if foundProp && attr.Key == content {
+			return attr.Val
+		}
+	}
+	return ""
+}
+
+func crawler(node *html.Node, hm *HTMLMeta) {
+	if node.Type == html.TextNode && node.Parent.Data == "title" {
+		hm.Title = node.Data
+	}
+	if node.Type == html.ElementNode {
+		if hm.Title == "" && node.Data == "meta" {
+			hm.Title = attrValue(node.Attr, "title")
+		}
+		if hm.Description == "" && node.Data == "meta" {
+			hm.Description = attrValue(node.Attr, "description")
+		}
+		if len(hm.Favicon) == 0 && node.Data == "link" {
+			hm.Favicon = attrValue(node.Attr, "icon")
+		}
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		crawler(child, hm)
+	}
+}
 func extract(resp io.Reader) *HTMLMeta {
-	hm := new(HTMLMeta)
-	data, _ := io.ReadAll(resp)
 	headRegex := regexp.MustCompile("<head>((.|\n|\r\n)+)</head>")
+	hm := new(HTMLMeta)
 
-	head := string(headRegex.Find(data))
-	head = strings.ReplaceAll(head, "\n", "")
+	data, _ := io.ReadAll(resp)
+	head := headRegex.Find(data)
+	tokens, _ := html.Parse(bytes.NewReader(head))
 
-	titleRegex := regexp.MustCompile(`<title.*>(.+)<\/title>`)
-	metaTitleRegex := regexp.MustCompile(`<meta.*?property="og:title".*?content="(.+?)".*?\/?>`)
-	descriptionRegex := regexp.MustCompile(`<meta.*?(?:name="description"|property="og:description").*?content="(.*?)".*?\/>`)
-
-	descMatches := descriptionRegex.FindStringSubmatch(head)
-	titleMatches := titleRegex.FindStringSubmatch(head)
-	if len(titleMatches) == 0 {
-		titleMatches = metaTitleRegex.FindStringSubmatch(head)
-	}
-
-	if len(descMatches) == 0 {
-		hm.Description = ""
-	} else {
-		hm.Description = descMatches[1]
-	}
-
-	if len(titleMatches) == 0 {
-		hm.Title = ""
-	} else {
-		hm.Title = titleMatches[1]
-	}
+	crawler(tokens, hm)
 
 	return hm
 }

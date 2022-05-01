@@ -3,7 +3,7 @@ package db
 type Meta struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Favicon     []byte `json:"favicon"`
+	Favicon     string `json:"favicon"`
 }
 
 type Bookmark struct {

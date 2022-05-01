@@ -8,6 +8,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/gin-gonic/gin v1.7.7
 	github.com/mattn/go-sqlite3 v1.14.12
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	github.com/yuin/goldmark v1.3.8 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/image v0.0.0-20200430140353-33d19683fad8 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
