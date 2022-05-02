@@ -11,16 +11,15 @@
 ## Todo
 
 - [x] Update /add route to support title, meta data, etc, auto fill missing data[1]
-- [x] 1) Auto fill missing data configuration
-- [] Add support for tags
-	- [] tags table?
+- [x] Auto fill missing data configuration
+- [x] Add support for tags
+- [] Auto label
 - [] Add /get route
 	- [] all 
 	- [] filter by tags
 	- [] sort by date added/updated
-- [] Auto label
-- [] Save as PDF/HTML
 - [] Import/Export
+- [] Save as PDF/HTML
 - [] Web frontend
 - [] Sync
 - [] Desktop frontend
