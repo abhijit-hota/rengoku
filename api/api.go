@@ -9,6 +9,7 @@ import (
 func main() {
 	router := gin.Default()
 	router.POST("/add", handlers.AddBookmark)
+	router.GET("/linktree", handlers.GetLinkTree)
 	router.GET("/bookmarks", handlers.GetBookmarks)
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
