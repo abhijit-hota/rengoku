@@ -1,3 +1,7 @@
-DatabasePath = "../links.db"
-ShouldSaveOffline = true
-AutofillURLData = true
+database_path = "../links.db"
+should_save_offline = true
+
+[[autotag_rule]]
+url_pattern = "https://github.com/"
+tags = ["GitHub", "To-Read/Codebases"]
+should_save_offline = false

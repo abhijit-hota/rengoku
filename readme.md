@@ -13,8 +13,12 @@
 - [x] Update /add route to support title, meta data, etc, auto fill missing data[1]
 - [x] Auto fill missing data configuration
 - [x] Add support for tags
-- [] Auto label
-- [] Add /get route
+- [x] LinkTree 
+- [] Config routes
+  - [] Get
+  - [] Update
+- [] Auto tag
+- [] /get routes
 	- [] all 
 	- [] filter by tags
 	- [] sort by date added/updated
