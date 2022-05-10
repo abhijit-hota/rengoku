@@ -4,7 +4,6 @@ import (
 	"bingo/api/common"
 	DB "bingo/api/db"
 	"bingo/api/utils"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,8 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var db *sql.DB = DB.GetDB()
-
 var config utils.Config
 
 func init() {
@@ -24,16 +21,16 @@ func init() {
 
 func AddBookmark(ctx *gin.Context) {
 	var json DB.Bookmark
+	db := DB.GetDB()
 
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if config.AutofillURLData {
-		if err := common.GetMetadata(json.URL, &json.Meta); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	// hasAutotagRule = utils.Contains[]() config.AutoTagRules
+	if err := common.GetMetadata(json.URL, &json.Meta); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	tx, err := db.Begin()
@@ -52,7 +49,7 @@ func AddBookmark(ctx *gin.Context) {
 		return
 	}
 
-	statement, err = tx.Prepare("INSERT INTO bookmarks (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)")
+	statement, err = tx.Prepare("INSERT INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)")
 	utils.Must(err)
 	defer statement.Close()
 
@@ -70,7 +67,7 @@ func AddBookmark(ctx *gin.Context) {
 		return
 	}
 
-	bookmarkID, _ := info.LastInsertId()
+	linkID, _ := info.LastInsertId()
 
 	statement, err = tx.Prepare("INSERT OR IGNORE INTO tags (path, created, last_updated, is_root) VALUES (?, ?, ?, ?)")
 	utils.Must(err)
@@ -79,10 +76,9 @@ func AddBookmark(ctx *gin.Context) {
 	tags := make([]any, len(json.Tags))
 
 	for i, tag := range json.Tags {
-		isRoot := !strings.ContainsRune(tag.Path, '/')
-		json.Tags[i].IsRoot = isRoot
-		statement.Exec(tag.Path, now, now, isRoot)
-		tags[i] = tag.Path
+		isRoot := !strings.ContainsRune(tag, '/')
+		statement.Exec(tag, now, now, isRoot)
+		tags[i] = tag
 	}
 
 	query := fmt.Sprintf("SELECT id FROM tags WHERE path IN (%s)", strings.TrimRight(strings.Repeat("?,", len(tags)), ","))
@@ -90,14 +86,14 @@ func AddBookmark(ctx *gin.Context) {
 	defer tagIDs.Close()
 	utils.Must(err)
 
-	statement, err = tx.Prepare("INSERT INTO bookmarks_tags (tag_id, bookmark_id) VALUES (?, ?)")
+	statement, err = tx.Prepare("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)")
 	utils.Must(err)
 	defer statement.Close()
 
 	for tagIDs.Next() {
 		var tagID int
 		tagIDs.Scan(&tagID)
-		statement.Exec(tagID, bookmarkID)
+		statement.Exec(tagID, linkID)
 	}
 	err = tagIDs.Err()
 	utils.Must(err)
