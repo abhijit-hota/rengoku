@@ -1,7 +1,5 @@
-database_path = "../links.db"
-should_save_offline = true
+should_save_offline = false
 
 [[autotag_rule]]
-url_pattern = "https://github.com/"
-tags = ["GitHub", "To-Read/Codebases"]
-should_save_offline = false
+  url_pattern = "https://news.ycombinator.com"
+  tags = [3, 4]

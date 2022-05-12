@@ -14,20 +14,33 @@
 - [x] Auto fill missing data configuration
 - [x] Add support for tags
 - [x] LinkTree 
-- [] Config routes
-  - [] Get
-  - [] Update
-- [] Auto tag
-- [] /get routes
-	- [] all 
-	- [] filter by tags
-	- [] sort by date added/updated
-- [] Import/Export
-- [] Save as PDF/HTML
-- [] Web frontend
-- [] Sync
-- [] Desktop frontend
-- [] CLI frontend
-- [] Phone frontend
-- [] Browser extension
+11
+- [x] Config routes
+  - [x] Get
+  - [x] Update
+  - [ ] Save offline config
+- [ ] Auto tag
+  - Match detection: https://bitwarden.com/help/uri-match-detection/
+- [ ] /get routes
+  - [x] all 
+  - [ ] filter by tags
+  - [ ] sort by date added/updated
+12
+- [ ] Search
+  - https://www.sqlite.org/fts5.html
+- [ ] Import/Export
+- [ ] Save as PDF/HTML
+  - go-shiori/Orca
+  - go-shiori/readability
+13
+- [ ] Browser extension
+- [ ] Web frontend
+
+14
+- [?] Sync
+- [ ] Phone frontend
+
+
+- [-] Desktop frontend
+- [-] CLI frontend
 	
