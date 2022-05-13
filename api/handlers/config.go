@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"bingo/api/utils"
+	"api/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

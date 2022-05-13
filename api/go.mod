@@ -1,10 +1,9 @@
-module bingo
+module api
 
 go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.1.0
-	github.com/atotto/clipboard v0.1.4
 	github.com/gin-gonic/gin v1.7.7
 	github.com/joho/godotenv v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.12
@@ -29,9 +28,4 @@ require (
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
-)
-
-require (
-	golang.design/x/hotkey v0.3.0
-	golang.design/x/mainthread v0.3.0 // indirect
 )

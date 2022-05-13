@@ -1,7 +1,7 @@
 package common
 
 import (
-	DB "bingo/api/db"
+	DB "api/db"
 	"bytes"
 	"io"
 	"net/http"

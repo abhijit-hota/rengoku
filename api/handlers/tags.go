@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	DB "bingo/api/db"
-	"bingo/api/utils"
+	DB "api/db"
+	"api/utils"
 	"fmt"
 	"net/http"
 	"strings"

@@ -1,7 +1,7 @@
 package db
 
 import (
-	"bingo/api/utils"
+	"api/utils"
 	"database/sql"
 	"os"
 

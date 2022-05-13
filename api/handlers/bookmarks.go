@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"bingo/api/common"
-	DB "bingo/api/db"
-	"bingo/api/utils"
+	"api/common"
+	DB "api/db"
+	"api/utils"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,14 +14,13 @@ import (
 )
 
 func AddBookmark(ctx *gin.Context) {
-	var json DB.Bookmark
+	var body DB.Bookmark
 	db := DB.GetDB()
 
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := ctx.BindJSON(&body); err != nil {
 		return
 	}
-	if err := common.GetMetadata(json.URL, &json.Meta); err != nil {
+	if err := common.GetMetadata(body.URL, &body.Meta); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -33,7 +32,7 @@ func AddBookmark(ctx *gin.Context) {
 	utils.Must(err)
 	defer statement.Close()
 
-	info, err := statement.Exec(json.Meta.Title, json.Meta.Description, json.Meta.Favicon)
+	info, err := statement.Exec(body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
 	metaID, _ := info.LastInsertId()
 
 	if err != nil {
@@ -47,16 +46,16 @@ func AddBookmark(ctx *gin.Context) {
 	defer statement.Close()
 
 	now := time.Now().Unix()
-	json.Created = now
-	json.LastUpdated = now
+	body.Created = now
+	body.LastUpdated = now
 
-	info, err = statement.Exec(json.URL, metaID, now, now)
+	info, err = statement.Exec(body.URL, metaID, now, now)
 	utils.Must(err)
 
-	if len(json.Tags) == 0 {
+	if len(body.Tags) == 0 {
 		tx.Commit()
 
-		ctx.JSON(http.StatusOK, json)
+		ctx.JSON(http.StatusOK, body)
 		return
 	}
 
@@ -67,15 +66,15 @@ func AddBookmark(ctx *gin.Context) {
 	numValues := 0
 	execValues := []any{}
 
-	for _, tag := range json.Tags {
+	for _, tag := range body.Tags {
 		execValues = append(execValues, tag, now, now)
 	}
 	stmtStr += strings.TrimRight(strings.Repeat("(?, ?, ?, ?),", numValues), ",")
 	statement, _ = tx.Prepare(stmtStr)
 	statement.Exec(execValues...)
 
-	query := fmt.Sprintf("SELECT id FROM tags WHERE name IN (%s)", strings.TrimRight(strings.Repeat("?,", len(json.Tags)), ","))
-	tagIDs, err := tx.Query(query, utils.ToGenericArray(json.Tags)...)
+	query := fmt.Sprintf("SELECT id FROM tags WHERE name IN (%s)", strings.TrimRight(strings.Repeat("?,", len(body.Tags)), ","))
+	tagIDs, err := tx.Query(query, utils.ToGenericArray(body.Tags)...)
 	defer tagIDs.Close()
 	utils.Must(err)
 
@@ -92,7 +91,7 @@ func AddBookmark(ctx *gin.Context) {
 	utils.Must(err)
 
 	tx.Commit()
-	ctx.JSON(http.StatusOK, json)
+	ctx.JSON(http.StatusOK, body)
 }
 
 type Filter struct {

@@ -16,7 +16,7 @@ type Bookmark struct {
 
 type Tag struct {
 	ID          int64  `json:"id"`
-	Name        string `json:"name" binding:"required"`
-	Created     int64  `json:"created"`
-	LastUpdated int64  `json:"last_updated"`
+	Name        string `json:"name" form:"name" binding:"required"`
+	Created     int64  `json:"created" form:"created"`
+	LastUpdated int64  `json:"last_updated" form:"last_updated"`
 }

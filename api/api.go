@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bingo/api/db"
-	"bingo/api/handlers"
-	"bingo/api/utils"
+	"api/db"
+	"api/handlers"
+	"api/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -19,7 +19,9 @@ func main() {
 	bookmarkRouter := router.Group("/bookmarks")
 	{
 		bookmarkRouter.POST("", handlers.AddBookmark)
+		bookmarkRouter.POST("/", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
+		bookmarkRouter.GET("/", handlers.GetBookmarks)
 		// bookmarkRouter.PATCH("/:id", handlers.UpdateBookmark)
 		// bookmarkRouter.DELETE("/", handlers.DeleteBookmark)
 	}
