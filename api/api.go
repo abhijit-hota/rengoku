@@ -25,10 +25,12 @@ func main() {
 	}
 	tagRouter := router.Group("/tags")
 	{
-		// tagRouter.POST("/", handlers.AddTag)
-		// tagRouter.GET("/", handlers.GetAllTags)
-		// tagRouter.PATCH("/:id", handlers.UpdateTag)
-		// tagRouter.DELETE("/:id", handlers.DeleteTag)
+		tagRouter.POST("/", handlers.CreateTag)
+		tagRouter.POST("", handlers.CreateTag)
+		tagRouter.GET("/", handlers.GetAllTags)
+		tagRouter.GET("", handlers.GetAllTags)
+		tagRouter.PATCH("/:id", handlers.UpdateTagName)
+		tagRouter.DELETE("/:id", handlers.DeleteTag)
 		tagRouter.GET("/tree", handlers.GetLinkTree)
 	}
 

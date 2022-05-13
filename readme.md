@@ -21,10 +21,19 @@
   - [ ] Save offline config
 - [ ] Auto tag
   - Match detection: https://bitwarden.com/help/uri-match-detection/
-- [ ] /get routes
+- [ ] Bookmark routes
   - [x] all 
   - [ ] filter by tags
   - [ ] sort by date added/updated
+  - [ ] update bookmark
+    - [ ] edit url (refetch all metadata?)
+    - [ ] edit tags
+  - [ ] delete bookmark (also remove it from all tags)
+- [x] Tag routes
+  - [x] C
+  - [x] R
+  - [x] U
+  - [x] D
 12
 - [ ] Search
   - https://www.sqlite.org/fts5.html
