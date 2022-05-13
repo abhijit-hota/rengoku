@@ -14,3 +14,7 @@ func RemoveIndex[T any](s []T, index int) []T {
 	ret = append(ret, s[:index]...)
 	return append(ret, s[index+1:]...)
 }
+
+func ToGenericArray(arr ...interface{}) []interface{} {
+	return arr
+}

@@ -62,20 +62,20 @@ func AddBookmark(ctx *gin.Context) {
 
 	linkID, _ := info.LastInsertId()
 
-	statement, err = tx.Prepare("INSERT OR IGNORE INTO tags (path, created, last_updated, is_root) VALUES (?, ?, ?, ?)")
-	utils.Must(err)
-	defer statement.Close()
+	stmtStr := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES"
 
-	tags := make([]any, len(json.Tags))
+	numValues := 0
+	execValues := []any{}
 
-	for i, tag := range json.Tags {
-		isRoot := !strings.ContainsRune(tag, '/')
-		statement.Exec(tag, now, now, isRoot)
-		tags[i] = tag
+	for _, tag := range json.Tags {
+		execValues = append(execValues, tag, now, now)
 	}
+	stmtStr += strings.TrimRight(strings.Repeat("(?, ?, ?, ?),", numValues), ",")
+	statement, _ = tx.Prepare(stmtStr)
+	statement.Exec(execValues...)
 
-	query := fmt.Sprintf("SELECT id FROM tags WHERE path IN (%s)", strings.TrimRight(strings.Repeat("?,", len(tags)), ","))
-	tagIDs, err := tx.Query(query, tags...)
+	query := fmt.Sprintf("SELECT id FROM tags WHERE name IN (%s)", strings.TrimRight(strings.Repeat("?,", len(json.Tags)), ","))
+	tagIDs, err := tx.Query(query, utils.ToGenericArray(json.Tags)...)
 	defer tagIDs.Close()
 	utils.Must(err)
 
@@ -95,10 +95,20 @@ func AddBookmark(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, json)
 }
 
+type Filter struct {
+	Tags []int
+	From int
+	To   int
+}
+
+type Sort struct {
+	AlphabeticTitle string
+}
+
 func GetBookmarks(ctx *gin.Context) {
 	db := DB.GetDB()
 
-	rows, err := db.Query(`SELECT links.url, links.created, links.last_updated, group_concat(tags.path), meta.title, meta.favicon, meta.description
+	rows, err := db.Query(`SELECT links.url, links.created, links.last_updated, group_concat(tags.name), meta.title, meta.favicon, meta.description
 							FROM links 
 							JOIN meta ON meta.id = links.meta_id 
 							JOIN links_tags ON links_tags.link_id = links.id 
