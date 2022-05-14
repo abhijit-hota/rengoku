@@ -34,7 +34,7 @@
     - [ ] bulk
   - [x] delete 
     - [x] individual
-    - [ ] bulk
+    - [x] bulk
 - [x] Tag routes
   - [x] C
   - [x] R

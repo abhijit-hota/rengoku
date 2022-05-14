@@ -308,3 +308,28 @@ func DeleteBookmark(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
+
+func BulkDeleteBookmarks(ctx *gin.Context) {
+	db := DB.GetDB()
+
+	var body struct {
+		Ids []int `json:"ids" binding:"required"`
+	}
+	if err := ctx.BindJSON(&body); err != nil {
+		return
+	}
+
+	placeholder := strings.TrimRight(strings.Repeat("?,", len(body.Ids)), ",")
+
+	tx, _ := db.Begin()
+
+	stmt := "DELETE FROM links WHERE id IN (" + placeholder + ")"
+	info, _ := tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
+	numDeleted, _ := info.RowsAffected()
+
+	stmt = "DELETE FROM links_tags WHERE link_id IN (" + placeholder + ")"
+	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
+
+	utils.Must(tx.Commit())
+	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
+}

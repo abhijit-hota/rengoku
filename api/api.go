@@ -19,19 +19,16 @@ func main() {
 	bookmarkRouter := router.Group("/bookmarks")
 	{
 		bookmarkRouter.POST("", handlers.AddBookmark)
-		bookmarkRouter.POST("/", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
-		bookmarkRouter.GET("/", handlers.GetBookmarks)
 
 		bookmarkRouter.PUT("/:id/tag", handlers.AddBookmarkTag)
 		bookmarkRouter.DELETE("/:id/tag/:tagId", handlers.DeleteBookmarkTag)
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
+		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)
 	}
 	tagRouter := router.Group("/tags")
 	{
-		tagRouter.POST("/", handlers.CreateTag)
 		tagRouter.POST("", handlers.CreateTag)
-		tagRouter.GET("/", handlers.GetAllTags)
 		tagRouter.GET("", handlers.GetAllTags)
 		tagRouter.PATCH("/:id", handlers.UpdateTagName)
 		tagRouter.DELETE("/:id", handlers.DeleteTag)
