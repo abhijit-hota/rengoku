@@ -23,8 +23,12 @@
   - Match detection: https://bitwarden.com/help/uri-match-detection/
 - [ ] Bookmark routes
   - [x] all 
-  - [ ] filter by tags
-  - [ ] sort by date added/updated
+  - [ ] filter
+    - [x] tags
+    - [ ] date range
+  - [x] sort
+    - [x] date
+    - [x] alphabetic title
   - [ ] update bookmark
     - [ ] edit url (refetch all metadata?)
     - [x] edit tags
@@ -35,6 +39,7 @@
   - [x] U
   - [x] D
 - [ ] Pagination
+- [ ] meta favicon bug
 12
 - [ ] Search
   - https://www.sqlite.org/fts5.html

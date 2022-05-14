@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/purell"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +20,14 @@ func AddBookmark(ctx *gin.Context) {
 	if err := ctx.BindJSON(&body); err != nil {
 		return
 	}
+
+	link, err := purell.NormalizeURLString(body.URL, purell.FlagsSafe)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	body.URL = link
+
 	if err := common.GetMetadata(body.URL, &body.Meta); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -40,11 +49,22 @@ func AddBookmark(ctx *gin.Context) {
 	body.Created = now
 	body.LastUpdated = now
 
-	stmt = "INSERT INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
+	stmt = "INSERT OR IGNORE INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
 	info, err = tx.Exec(stmt, body.URL, metaID, now, now)
 	utils.Must(err)
 
+	num, _ := info.RowsAffected()
+	if num == 0 {
+		body.Tags = []string{}
+		tx.Exec("DELETE FROM meta WHERE id = ?", metaID)
+		tx.Commit()
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "URL_ALREADY_PRESENT"})
+		return
+	}
+
 	if len(body.Tags) == 0 {
+		body.Tags = []string{}
 		tx.Commit()
 
 		ctx.JSON(http.StatusOK, body)
@@ -82,24 +102,62 @@ func AddBookmark(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, body)
 }
 
-type Filter struct {
-	Tags []int
-	From int
-	To   int
+const (
+	Title       = "title"
+	DateCreated = "date_created"
+	DateUpdated = "date_updated"
+	Asc         = "asc"
+	Desc        = "desc"
+	Tags        = "tags"
+)
+
+var sortColumnMap = map[string]string{
+	Title:       "meta.title",
+	DateCreated: "links.created",
+	DateUpdated: "links.last_updated",
 }
 
-type Sort struct {
-	AlphabeticTitle string
+type Query struct {
+	// Sort queries
+	SortBy string `form:"sort_by"` /* Title || Date */
+	Order  string `form:"order"`   /* Asc || Desc */
+
+	// Filter queries
+	FilterBy string  `form:"filter_by"` /* Tags || DateRange */
+	Tags     []int64 `form:"tags[]"`
 }
 
 func GetBookmarks(ctx *gin.Context) {
 	db := DB.GetDB()
+	var queryParams Query
 
-	rows, err := db.Query(`SELECT links.id, links.url, links.created, links.last_updated, group_concat(tags.name), meta.title, meta.favicon, meta.description
-							FROM links 
-							JOIN meta ON meta.id = links.meta_id 
-							JOIN links_tags ON links_tags.link_id = links.id 
-							JOIN tags ON tags.id = links_tags.tag_id GROUP BY links.id`)
+	if err := ctx.ShouldBind(&queryParams); err != nil {
+		ctx.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, GROUP_CONCAT(IFNULL(tags.name,"")), meta.title, meta.favicon, meta.description
+				FROM links 
+				LEFT JOIN meta ON meta.id = links.meta_id 
+				LEFT JOIN links_tags ON links_tags.link_id = links.id 
+				LEFT JOIN tags ON tags.id = links_tags.tag_id`
+
+	if queryParams.FilterBy == Tags && len(queryParams.Tags) > 0 {
+		dbQuery += fmt.Sprintf("\nWHERE tags.id IN (%s)", strings.TrimRight(strings.Repeat("?,", len(queryParams.Tags)), ","))
+	}
+	dbQuery += "\nGROUP BY links.id"
+
+	sortByColumn := sortColumnMap[queryParams.SortBy]
+	if sortByColumn != "" {
+		order := Asc
+		if queryParams.Order == Desc {
+			order = Desc
+		}
+		order = strings.ToUpper(order)
+		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
+	}
+	preparedQuery, _ := db.Prepare(dbQuery)
+	rows, err := preparedQuery.Query(utils.ToGenericArray(queryParams.Tags)...)
 	utils.Must(err)
 	defer rows.Close()
 
@@ -118,7 +176,12 @@ func GetBookmarks(ctx *gin.Context) {
 			&bm.Meta.Description,
 		)
 		utils.Must(err)
-		bm.Tags = strings.Split(tagStr, ",")
+		if tagStr == "" {
+			bm.Tags = []string{}
+		} else {
+			bm.Tags = strings.Split(tagStr, ",")
+		}
+
 		bookmarks = append(bookmarks, bm)
 	}
 	err = rows.Err()
