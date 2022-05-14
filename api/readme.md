@@ -41,7 +41,7 @@
   - [x] U
   - [x] D
 - [ ] Pagination
-- [ ] meta favicon bug
+- [x] meta favicon bug
 12
 - [ ] Search
   - https://www.sqlite.org/fts5.html

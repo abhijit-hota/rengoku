@@ -26,12 +26,19 @@ func searchAttributes(attributes []html.Attribute, lookingFor string) string {
 	}
 
 	foundProp := false
+	foundValue := ""
 	for _, attr := range attributes {
 		if (attr.Key == key || (lookingFor != "icon" && attr.Key == "name")) && strings.Contains(attr.Val, lookingFor) {
+			if foundValue != "" {
+				return foundValue
+			}
 			foundProp = true
 		}
-		if foundProp && attr.Key == content {
-			return attr.Val
+		if attr.Key == content {
+			if foundProp {
+				return attr.Val
+			}
+			foundValue = attr.Val
 		}
 	}
 	return ""
@@ -60,7 +67,7 @@ func crawl(node *html.Node, hm *DB.Meta) {
 }
 func GetMetadata(link string, hm *DB.Meta) error {
 	link = strings.TrimSpace(link)
-	if !(strings.HasPrefix(link, "https://") || strings.HasPrefix(link, "https://")) {
+	if !(strings.HasPrefix(link, "https://") || strings.HasPrefix(link, "http://")) {
 		link = "https://" + link
 	}
 
