@@ -31,7 +31,7 @@
     - [x] alphabetic title
   - [x] update bookmark tags
     - [x] individual
-    - [ ] bulk
+    - [x] bulk
   - [x] delete 
     - [x] individual
     - [x] bulk

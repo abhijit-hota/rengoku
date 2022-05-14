@@ -255,7 +255,7 @@ func AddBookmarkTag(ctx *gin.Context) {
 	db := DB.GetDB()
 	var uri IdUri
 	var newTag struct {
-		Name string `json:"name" form:"name" binding:"required"`
+		Id int `json:"id" form:"id" binding:"required"`
 	}
 
 	if err := ctx.BindUri(&uri); err != nil {
@@ -265,25 +265,11 @@ func AddBookmarkTag(ctx *gin.Context) {
 		return
 	}
 
-	tx, _ := db.Begin()
-	now := time.Now().Unix()
-
-	stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
-	_, err := tx.Exec(stmt, newTag.Name, now, now)
-	utils.Must(err)
-
-	query := "SELECT id FROM tags WHERE name = ?"
-	tag := tx.QueryRow(query, newTag.Name)
-	var tagID int
-	tag.Scan(&tagID)
-	utils.Must(err)
-
-	stmt = "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
-	info, err := tx.Exec(stmt, tagID, uri.ID)
+	stmt := "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
+	info, err := db.Exec(stmt, newTag.Id, uri.ID)
 	utils.Must(err)
 	updatedLinks, _ := info.RowsAffected()
 
-	tx.Commit()
 	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks == 1})
 }
 
@@ -332,4 +318,40 @@ func BulkDeleteBookmarks(ctx *gin.Context) {
 
 	utils.Must(tx.Commit())
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
+}
+
+func BulkAddBookmarkTags(ctx *gin.Context) {
+	db := DB.GetDB()
+
+	var body struct {
+		LinkIds []int `json:"link_ids" binding:"required"`
+		TagIds  []int `json:"tag_ids" binding:"required"`
+	}
+	if err := ctx.Bind(&body); err != nil {
+		return
+	}
+
+	numTotalPairs := len(body.LinkIds) * len(body.TagIds)
+	fmt.Println("calc len:", numTotalPairs)
+
+	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES " + strings.TrimRight(strings.Repeat("(?, ?),", numTotalPairs), ",")
+	fmt.Println("stmt: ", str)
+	stmt, err := db.Prepare(str)
+	utils.Must(err)
+
+	allPairs := []int{}
+
+	for _, linkId := range body.LinkIds {
+		for _, tagId := range body.TagIds {
+			allPairs = append(allPairs, tagId, linkId)
+		}
+	}
+
+	fmt.Println("All len:", len(allPairs))
+
+	info, err := stmt.Exec(utils.ToGenericArray(allPairs)...)
+	utils.Must(err)
+	updatedLinks, _ := info.RowsAffected()
+
+	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks})
 }
