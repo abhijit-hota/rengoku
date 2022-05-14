@@ -15,6 +15,10 @@ func RemoveIndex[T any](s []T, index int) []T {
 	return append(ret, s[index+1:]...)
 }
 
-func ToGenericArray(arr ...interface{}) []interface{} {
-	return arr
+func ToGenericArray[T any](input []T) []any {
+	output := make([]any, len(input))
+	for i := range input {
+		output[i] = input[i]
+	}
+	return output
 }

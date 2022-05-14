@@ -27,13 +27,14 @@
   - [ ] sort by date added/updated
   - [ ] update bookmark
     - [ ] edit url (refetch all metadata?)
-    - [ ] edit tags
-  - [ ] delete bookmark (also remove it from all tags)
+    - [x] edit tags
+  - [x] delete bookmark (also remove it from all tags)
 - [x] Tag routes
   - [x] C
   - [x] R
   - [x] U
   - [x] D
+- [ ] Pagination
 12
 - [ ] Search
   - https://www.sqlite.org/fts5.html

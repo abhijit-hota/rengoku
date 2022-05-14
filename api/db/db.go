@@ -19,7 +19,7 @@ func InitializeDB() (db *sql.DB) {
 CREATE TABLE IF NOT EXISTS links (
 	id INTEGER NOT NULL PRIMARY KEY, 
 	meta_id INTEGER,
-	url TEXT,
+	url TEXT NOT NULL UNIQUE,
 	created INTEGER, 
 	last_updated INTEGER,
 	FOREIGN KEY (meta_id) REFERENCES meta(id)

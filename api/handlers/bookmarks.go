@@ -5,7 +5,6 @@ import (
 	DB "api/db"
 	"api/utils"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -28,28 +27,21 @@ func AddBookmark(ctx *gin.Context) {
 	tx, err := db.Begin()
 	utils.Must(err)
 
-	statement, err := db.Prepare("INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)")
-	utils.Must(err)
-	defer statement.Close()
-
-	info, err := statement.Exec(body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
+	stmt := "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
+	info, err := tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
 	metaID, _ := info.LastInsertId()
 
 	if err != nil {
-		log.Println(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL."})
 		return
 	}
-
-	statement, err = tx.Prepare("INSERT INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)")
-	utils.Must(err)
-	defer statement.Close()
 
 	now := time.Now().Unix()
 	body.Created = now
 	body.LastUpdated = now
 
-	info, err = statement.Exec(body.URL, metaID, now, now)
+	stmt = "INSERT INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
+	info, err = tx.Exec(stmt, body.URL, metaID, now, now)
 	utils.Must(err)
 
 	if len(body.Tags) == 0 {
@@ -61,17 +53,13 @@ func AddBookmark(ctx *gin.Context) {
 
 	linkID, _ := info.LastInsertId()
 
-	stmtStr := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES"
-
-	numValues := 0
-	execValues := []any{}
+	statement, err := tx.Prepare("INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)")
+	utils.Must(err)
+	defer statement.Close()
 
 	for _, tag := range body.Tags {
-		execValues = append(execValues, tag, now, now)
+		statement.Exec(tag, now, now)
 	}
-	stmtStr += strings.TrimRight(strings.Repeat("(?, ?, ?, ?),", numValues), ",")
-	statement, _ = tx.Prepare(stmtStr)
-	statement.Exec(execValues...)
 
 	query := fmt.Sprintf("SELECT id FROM tags WHERE name IN (%s)", strings.TrimRight(strings.Repeat("?,", len(body.Tags)), ","))
 	tagIDs, err := tx.Query(query, utils.ToGenericArray(body.Tags)...)
@@ -107,11 +95,11 @@ type Sort struct {
 func GetBookmarks(ctx *gin.Context) {
 	db := DB.GetDB()
 
-	rows, err := db.Query(`SELECT links.url, links.created, links.last_updated, group_concat(tags.name), meta.title, meta.favicon, meta.description
+	rows, err := db.Query(`SELECT links.id, links.url, links.created, links.last_updated, group_concat(tags.name), meta.title, meta.favicon, meta.description
 							FROM links 
 							JOIN meta ON meta.id = links.meta_id 
 							JOIN links_tags ON links_tags.link_id = links.id 
-							JOIN tags ON tags.id = links_tags.tag_id GROUP BY links.url`)
+							JOIN tags ON tags.id = links_tags.tag_id GROUP BY links.id`)
 	utils.Must(err)
 	defer rows.Close()
 
@@ -120,6 +108,7 @@ func GetBookmarks(ctx *gin.Context) {
 		var bm DB.Bookmark
 		var tagStr string
 		err = rows.Scan(
+			&bm.ID,
 			&bm.URL,
 			&bm.Created,
 			&bm.LastUpdated,
@@ -135,4 +124,80 @@ func GetBookmarks(ctx *gin.Context) {
 	err = rows.Err()
 	utils.Must(err)
 	ctx.JSON(http.StatusOK, bookmarks)
+}
+
+func DeleteBookmarkTag(ctx *gin.Context) {
+	db := DB.GetDB()
+	var uri struct {
+		IdUri
+		TagId int `uri:"tagId" binding:"required"`
+	}
+
+	if err := ctx.BindUri(&uri); err != nil {
+		return
+	}
+
+	stmt := "DELETE FROM links_tags WHERE link_id = ? AND tag_id = ?"
+	info, _ := db.Exec(stmt, uri.ID, uri.TagId)
+	numDeleted, _ := info.RowsAffected()
+
+	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
+}
+
+func AddBookmarkTag(ctx *gin.Context) {
+	db := DB.GetDB()
+	var uri IdUri
+	var newTag struct {
+		Name string `json:"name" form:"name" binding:"required"`
+	}
+
+	if err := ctx.BindUri(&uri); err != nil {
+		return
+	}
+	if err := ctx.Bind(&newTag); err != nil {
+		return
+	}
+
+	tx, _ := db.Begin()
+	now := time.Now().Unix()
+
+	stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
+	_, err := tx.Exec(stmt, newTag.Name, now, now)
+	utils.Must(err)
+
+	query := "SELECT id FROM tags WHERE name = ?"
+	tag := tx.QueryRow(query, newTag.Name)
+	var tagID int
+	tag.Scan(&tagID)
+	utils.Must(err)
+
+	stmt = "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
+	info, err := tx.Exec(stmt, tagID, uri.ID)
+	utils.Must(err)
+	updatedLinks, _ := info.RowsAffected()
+
+	tx.Commit()
+	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks == 1})
+}
+
+func DeleteBookmark(ctx *gin.Context) {
+	db := DB.GetDB()
+	var uri IdUri
+
+	if err := ctx.BindUri(&uri); err != nil {
+		return
+	}
+
+	tx, _ := db.Begin()
+
+	stmt := "DELETE FROM links WHERE id = ?"
+	info, _ := tx.Exec(stmt, uri.ID)
+	numDeleted, _ := info.RowsAffected()
+
+	stmt = "DELETE FROM links_tags WHERE link_id = ?"
+	tx.Exec(stmt, uri.ID)
+
+	utils.Must(tx.Commit())
+
+	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }

@@ -157,11 +157,16 @@ func DeleteTag(ctx *gin.Context) {
 		return
 	}
 
-	statement := "DELETE FROM tags WHERE id = ?"
-	info, err := db.Exec(statement, uri.ID)
-	utils.Must(err)
+	tx, _ := db.Begin()
 
+	statement := "DELETE FROM tags WHERE id = ?"
+	info, err := tx.Exec(statement, uri.ID)
+	utils.Must(err)
 	numDeleted, _ := info.RowsAffected()
+
+	statement = "DELETE FROM links_tags WHERE tag_id = ?"
+	_, err = tx.Exec(statement, uri.ID)
+	utils.Must(err)
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }

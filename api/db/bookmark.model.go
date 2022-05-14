@@ -7,6 +7,7 @@ type Meta struct {
 }
 
 type Bookmark struct {
+	ID          int64    `json:"id"`
 	Meta        Meta     `json:"meta"`
 	URL         string   `json:"url" binding:"required"`
 	Created     int64    `json:"created"`

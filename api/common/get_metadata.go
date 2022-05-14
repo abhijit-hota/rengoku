@@ -13,9 +13,10 @@ import (
 )
 
 func searchAttributes(attributes []html.Attribute, lookingFor string) string {
-	var key string
 
+	var key string
 	var content string
+
 	if lookingFor == "icon" {
 		key = "rel"
 		content = "href"
@@ -36,11 +37,7 @@ func searchAttributes(attributes []html.Attribute, lookingFor string) string {
 	return ""
 }
 
-var headRegex *regexp.Regexp
-
-func init() {
-	headRegex = regexp.MustCompile("<head>((.|\n|\r\n)+)</head>")
-}
+var headRegex = regexp.MustCompile("<head>((.|\n|\r\n)+)</head>")
 
 func crawl(node *html.Node, hm *DB.Meta) {
 	if node.Type == html.TextNode && node.Parent.Data == "title" {

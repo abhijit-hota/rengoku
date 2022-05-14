@@ -22,8 +22,10 @@ func main() {
 		bookmarkRouter.POST("/", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
 		bookmarkRouter.GET("/", handlers.GetBookmarks)
-		// bookmarkRouter.PATCH("/:id", handlers.UpdateBookmark)
-		// bookmarkRouter.DELETE("/", handlers.DeleteBookmark)
+
+		bookmarkRouter.PUT("/:id/tag", handlers.AddBookmarkTag)
+		bookmarkRouter.DELETE("/:id/tag/:tagId", handlers.DeleteBookmarkTag)
+		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 	}
 	tagRouter := router.Group("/tags")
 	{
