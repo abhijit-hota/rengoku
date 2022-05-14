@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"api/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,10 @@ func ToggleSaveOffline(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, cfg)
 }
 
-func UpdateAutotagRules(ctx *gin.Context) {
-	var autotag utils.AutoTagRule
+func UpdateURLActions(ctx *gin.Context) {
+	var urlAction utils.URLAction
 
-	if err := ctx.ShouldBindJSON(&autotag); err != nil {
+	if err := ctx.ShouldBindJSON(&urlAction); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -32,21 +33,29 @@ func UpdateAutotagRules(ctx *gin.Context) {
 
 	switch ctx.Request.Method {
 	case "POST":
-		cfg.AutoTagRules = append(cfg.AutoTagRules, autotag)
+		if urlAction.MatchDetection == "" {
+			urlAction.MatchDetection = "starts_with"
+		}
+		if len(urlAction.Tags) == 0 {
+			urlAction.Tags = []int{}
+		}
+		fmt.Printf("%+v\n", urlAction)
+		cfg.URLActions = append(cfg.URLActions, urlAction)
 		break
 	case "PUT":
-		for index, rule := range cfg.AutoTagRules {
-			if rule.Pattern == autotag.Pattern {
-				cfg.AutoTagRules[index] = autotag
+		// TODO: Shift to merging logic
+		for index, rule := range cfg.URLActions {
+			if rule.Pattern == urlAction.Pattern {
+				cfg.URLActions[index] = urlAction
 				break
 			}
 		}
 		ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
 		return
 	case "DELETE":
-		for index, rule := range cfg.AutoTagRules {
-			if rule.Pattern == autotag.Pattern {
-				cfg.AutoTagRules = utils.RemoveIndex(cfg.AutoTagRules, index)
+		for index, rule := range cfg.URLActions {
+			if rule.Pattern == urlAction.Pattern {
+				cfg.URLActions = utils.RemoveIndex(cfg.URLActions, index)
 			}
 		}
 		ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})

@@ -43,11 +43,11 @@ func main() {
 		configRouter.GET("", handlers.GetConfig)
 		configRouter.PATCH("/save-offline", handlers.ToggleSaveOffline)
 
-		autotagRouter := configRouter.Group("/autotag-rule")
+		urlActionRouter := configRouter.Group("/url-action")
 		{
-			autotagRouter.POST("", handlers.UpdateAutotagRules)
-			autotagRouter.PUT("", handlers.UpdateAutotagRules)
-			autotagRouter.DELETE("", handlers.UpdateAutotagRules)
+			urlActionRouter.POST("", handlers.UpdateURLActions)
+			urlActionRouter.PUT("", handlers.UpdateURLActions)
+			urlActionRouter.DELETE("", handlers.UpdateURLActions)
 		}
 	}
 	router.Run()

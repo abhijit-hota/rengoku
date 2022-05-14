@@ -10,7 +10,7 @@
 
 ## Todo
 
-- [x] Update /add route to support title, meta data, etc, auto fill missing data[1]
+- [x] Update /add route to support title, meta data
 - [x] Auto fill missing data configuration
 - [x] Add support for tags
 - [x] LinkTree 
@@ -18,8 +18,8 @@
 - [x] Config routes
   - [x] Get
   - [x] Update
-  - [ ] Save offline config
-- [ ] Auto tag
+  - [x] Save offline config
+- [x] Auto tag
   - Match detection: https://bitwarden.com/help/uri-match-detection/
 - [ ] Bookmark routes
   - [x] all 
@@ -29,10 +29,12 @@
   - [x] sort
     - [x] date
     - [x] alphabetic title
-  - [ ] update bookmark
-    - [ ] edit url (refetch all metadata?)
-    - [x] edit tags
-  - [x] delete bookmark (also remove it from all tags)
+  - [x] update bookmark tags
+    - [x] individual
+    - [ ] bulk
+  - [x] delete 
+    - [x] individual
+    - [ ] bulk
 - [x] Tag routes
   - [x] C
   - [x] R

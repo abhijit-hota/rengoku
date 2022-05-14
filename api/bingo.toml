@@ -1,5 +1,13 @@
 should_save_offline = false
 
-[[autotag_rule]]
-  url_pattern = "https://news.ycombinator.com"
-  tags = [3, 4]
+[[url_action]]
+  pattern = "https://news.ycombinator.com"
+  match_detection = "starts_with"
+  should_save_offline = true
+  tags = [3, 2]
+
+[[url_action]]
+  pattern = "https://github.com"
+  match_detection = "starts_with"
+  should_save_offline = false
+  tags = [4, 5]

@@ -6,6 +6,7 @@ import (
 	"api/utils"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,8 +14,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type BookmarkReq struct {
+	DB.Bookmark
+	Tags []int `json:"tags"`
+}
+type BookmarkRes struct {
+	DB.Bookmark
+	Tags []DB.Tag `json:"tags"`
+}
+
 func AddBookmark(ctx *gin.Context) {
-	var body DB.Bookmark
+	var body BookmarkReq
+
 	db := DB.GetDB()
 
 	if err := ctx.BindJSON(&body); err != nil {
@@ -22,13 +33,8 @@ func AddBookmark(ctx *gin.Context) {
 	}
 
 	link, err := purell.NormalizeURLString(body.URL, purell.FlagsSafe)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	body.URL = link
-
-	if err := common.GetMetadata(body.URL, &body.Meta); err != nil {
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -36,9 +42,28 @@ func AddBookmark(ctx *gin.Context) {
 	tx, err := db.Begin()
 	utils.Must(err)
 
-	stmt := "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
-	info, err := tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
-	metaID, _ := info.LastInsertId()
+	stmt := "SELECT COUNT(*) FROM links WHERE url = ?"
+	existingCheck := tx.QueryRow(stmt, body.URL)
+	var urlExists int
+	existingCheck.Scan(&urlExists)
+
+	if urlExists != 0 {
+		body.Tags = []int{}
+		tx.Commit()
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "URL_ALREADY_PRESENT"})
+		return
+	}
+
+	if err := common.GetMetadata(body.URL, &body.Meta); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// TODO: do this parallely? but what about meta id?
+	stmt = "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
+	metaExecinfo, err := tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
+	metaID, _ := metaExecinfo.LastInsertId()
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL."})
@@ -50,39 +75,36 @@ func AddBookmark(ctx *gin.Context) {
 	body.LastUpdated = now
 
 	stmt = "INSERT OR IGNORE INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
-	info, err = tx.Exec(stmt, body.URL, metaID, now, now)
+	linkInsertionInfo, err := tx.Exec(stmt, body.URL, metaID, now, now)
 	utils.Must(err)
 
-	num, _ := info.RowsAffected()
-	if num == 0 {
-		body.Tags = []string{}
-		tx.Exec("DELETE FROM meta WHERE id = ?", metaID)
-		tx.Commit()
+	urlActions := utils.GetConfig().URLActions
 
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "URL_ALREADY_PRESENT"})
-		return
+	shouldSaveOffline := utils.GetConfig().ShouldSaveOffline
+	for _, urlAction := range urlActions {
+		if urlAction.Match(body.URL) {
+			body.Tags = append(body.Tags, urlAction.Tags...)
+			shouldSaveOffline = urlAction.ShouldSaveOffline
+		}
 	}
-
+	if shouldSaveOffline {
+		go common.SavePage(body.URL)
+	}
+	fmt.Println(444, body.Tags)
 	if len(body.Tags) == 0 {
-		body.Tags = []string{}
+		body.Tags = []int{}
 		tx.Commit()
 
 		ctx.JSON(http.StatusOK, body)
 		return
 	}
 
-	linkID, _ := info.LastInsertId()
-
-	statement, err := tx.Prepare("INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)")
-	utils.Must(err)
-	defer statement.Close()
-
-	for _, tag := range body.Tags {
-		statement.Exec(tag, now, now)
-	}
-
-	query := fmt.Sprintf("SELECT id FROM tags WHERE name IN (%s)", strings.TrimRight(strings.Repeat("?,", len(body.Tags)), ","))
-	tagIDs, err := tx.Query(query, utils.ToGenericArray(body.Tags)...)
+	query := fmt.Sprintf(
+		"SELECT id, name FROM tags WHERE id IN (%s)",
+		strings.TrimRight(strings.Repeat("?,", len(body.Tags)), ","),
+	)
+	statement, _ := tx.Prepare(query)
+	tagIDs, err := statement.Query(utils.ToGenericArray(body.Tags)...)
 	defer tagIDs.Close()
 	utils.Must(err)
 
@@ -90,16 +112,26 @@ func AddBookmark(ctx *gin.Context) {
 	utils.Must(err)
 	defer statement.Close()
 
+	linkID, _ := linkInsertionInfo.LastInsertId()
+	body.ID = linkID
+
+	var res BookmarkRes
+	res.Bookmark = body.Bookmark
+
 	for tagIDs.Next() {
-		var tagID int
-		tagIDs.Scan(&tagID)
-		statement.Exec(tagID, linkID)
+		var tag DB.Tag
+		tagIDs.Scan(&tag.ID, &tag.Name)
+		_, err := statement.Exec(tag.ID, linkID)
+		utils.Must(err)
+
+		fmt.Printf("%+v\n", tag)
+		res.Tags = append(res.Tags, tag)
 	}
 	err = tagIDs.Err()
 	utils.Must(err)
 
 	tx.Commit()
-	ctx.JSON(http.StatusOK, body)
+	ctx.JSON(http.StatusOK, res)
 }
 
 const (
@@ -136,7 +168,9 @@ func GetBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, GROUP_CONCAT(IFNULL(tags.name,"")), meta.title, meta.favicon, meta.description
+	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, 
+					   GROUP_CONCAT(IFNULL(tags.id,"") || "=" || IFNULL(tags.name,"")),
+					   meta.title, meta.favicon, meta.description
 				FROM links 
 				LEFT JOIN meta ON meta.id = links.meta_id 
 				LEFT JOIN links_tags ON links_tags.link_id = links.id 
@@ -161,9 +195,9 @@ func GetBookmarks(ctx *gin.Context) {
 	utils.Must(err)
 	defer rows.Close()
 
-	bookmarks := make([]DB.Bookmark, 0)
+	bookmarks := make([]BookmarkRes, 0)
 	for rows.Next() {
-		var bm DB.Bookmark
+		var bm BookmarkRes
 		var tagStr string
 		err = rows.Scan(
 			&bm.ID,
@@ -176,16 +210,26 @@ func GetBookmarks(ctx *gin.Context) {
 			&bm.Meta.Description,
 		)
 		utils.Must(err)
-		if tagStr == "" {
-			bm.Tags = []string{}
+		if tagStr == "=" {
+			bm.Tags = []DB.Tag{}
 		} else {
-			bm.Tags = strings.Split(tagStr, ",")
+			keyVals := strings.Split(tagStr, ",")
+			for _, keyval := range keyVals {
+				str := strings.Split(keyval, "=")
+				tagId, _ := strconv.Atoi(str[0])
+
+				var tag DB.Tag
+				tag.ID = int64(tagId)
+				tag.Name = str[1]
+				bm.Tags = append(bm.Tags, tag)
+			}
 		}
 
 		bookmarks = append(bookmarks, bm)
 	}
 	err = rows.Err()
 	utils.Must(err)
+
 	ctx.JSON(http.StatusOK, bookmarks)
 }
 

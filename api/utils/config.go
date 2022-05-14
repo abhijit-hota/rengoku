@@ -2,18 +2,41 @@ package utils
 
 import (
 	"bufio"
+	"net/url"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
 
-type AutoTagRule struct {
-	Pattern string `toml:"url_pattern" json:"pattern" binding:"required"`
-	Tags    []int  `toml:"tags" json:"tags" binding:"required"`
+type URLAction struct {
+	Pattern           string `toml:"pattern" json:"pattern" binding:"required"`
+	MatchDetection    string `toml:"match_detection" json:"matchDetection"`
+	ShouldSaveOffline bool   `toml:"should_save_offline" json:"shouldSaveOffline,omitempty"`
+	Tags              []int  `toml:"tags" json:"tags"`
 }
+
+func (u URLAction) Match(urlStr string) bool {
+	switch u.MatchDetection {
+	case "regex":
+		matched, err := regexp.MatchString(u.Pattern, urlStr)
+		Must(err)
+		return matched
+	case "domain":
+		parsed, err := url.Parse(urlStr)
+		Must(err)
+		return parsed.Hostname() == u.Pattern
+	case "starts_with":
+		fallthrough
+	default:
+		return strings.HasPrefix(urlStr, u.Pattern)
+	}
+}
+
 type Config struct {
-	ShouldSaveOffline bool          `toml:"should_save_offline" json:"shouldSaveOffline"`
-	AutoTagRules      []AutoTagRule `toml:"autotag_rule" json:"autotagRules"`
+	ShouldSaveOffline bool        `toml:"should_save_offline" json:"shouldSaveOffline"`
+	URLActions        []URLAction `toml:"url_action" json:"urlActions"`
 }
 
 var config *Config
