@@ -77,6 +77,8 @@ func AddBookmark(ctx *gin.Context) {
 	stmt = "INSERT OR IGNORE INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
 	linkInsertionInfo, err := tx.Exec(stmt, body.URL, metaID, now, now)
 	utils.Must(err)
+	linkID, _ := linkInsertionInfo.LastInsertId()
+	body.ID = linkID
 
 	urlActions := utils.GetConfig().URLActions
 
@@ -88,9 +90,9 @@ func AddBookmark(ctx *gin.Context) {
 		}
 	}
 	if shouldSaveOffline {
-		go common.SavePage(body.URL)
+		go common.SavePage(body.URL, int(linkID))
 	}
-	fmt.Println(444, body.Tags)
+
 	if len(body.Tags) == 0 {
 		body.Tags = []int{}
 		tx.Commit()
@@ -111,9 +113,6 @@ func AddBookmark(ctx *gin.Context) {
 	statement, err = tx.Prepare("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)")
 	utils.Must(err)
 	defer statement.Close()
-
-	linkID, _ := linkInsertionInfo.LastInsertId()
-	body.ID = linkID
 
 	var res BookmarkRes
 	res.Bookmark = body.Bookmark

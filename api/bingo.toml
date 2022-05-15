@@ -1,4 +1,4 @@
-should_save_offline = false
+should_save_offline = true
 
 [[url_action]]
   pattern = "https://news.ycombinator.com"
