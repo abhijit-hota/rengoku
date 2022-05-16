@@ -43,12 +43,10 @@
 - [ ] Pagination
 - [x] meta favicon bug
 12
-- [ ] Search
+- [x] Search
   - https://www.sqlite.org/fts5.html
 - [ ] Import/Export
-- [ ] Save as PDF/HTML
-  - go-shiori/Orca
-  - go-shiori/readability
+- [x] Save offline as HTML
 13
 - [ ] Browser extension
 - [ ] Web frontend
@@ -57,7 +55,13 @@
 - [?] Sync
 - [ ] Phone frontend
 
-
 - [-] Desktop frontend
 - [-] CLI frontend
 	
+
+### Finishing
+
+- [ ] Standardize Logging
+- [ ] Standardize errors
+- [ ] Publishing
+- [ ] Trimming binaries

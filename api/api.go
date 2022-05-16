@@ -4,10 +4,27 @@ import (
 	"api/db"
 	"api/handlers"
 	"api/utils"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
 
 func main() {
 	godotenv.Load()
@@ -15,8 +32,17 @@ func main() {
 	db.InitializeDB()
 
 	router := gin.Default()
+	router.Use(CORSMiddleware())
+	router.Static("css", "views/css")
+	router.Static("js", "views/js")
+	router.LoadHTMLGlob("views/html/*.html")
 
-	bookmarkRouter := router.Group("/bookmarks")
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "index.html", nil)
+	})
+
+	apiRouter := router.Group("/api")
+	bookmarkRouter := apiRouter.Group("/bookmarks")
 	{
 		bookmarkRouter.POST("", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
@@ -27,7 +53,7 @@ func main() {
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)
 	}
-	tagRouter := router.Group("/tags")
+	tagRouter := apiRouter.Group("/tags")
 	{
 		tagRouter.POST("", handlers.CreateTag)
 		tagRouter.GET("", handlers.GetAllTags)
@@ -36,7 +62,7 @@ func main() {
 		tagRouter.GET("/tree", handlers.GetLinkTree)
 	}
 
-	configRouter := router.Group("/config")
+	configRouter := apiRouter.Group("/config")
 	{
 		configRouter.GET("", handlers.GetConfig)
 		configRouter.PATCH("/save-offline", handlers.ToggleSaveOffline)
