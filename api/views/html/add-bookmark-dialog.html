@@ -7,12 +7,17 @@
 		@submit.prevent="async () => {
             status = 'SUBMITTING'
             try {
-              	const newBookmark = await api('/bookmarks', 'POST', { url: $event.target.elements.url.value })
+				const tags = [...$event.target.elements.tags.options].filter(option => option.selected).map(option => +option.value)
+              	const newBookmark = await api('/bookmarks', 'POST', { 
+					url: $event.target.elements.url.value, 
+					tags,
+				})
                 status = 'SUCCESS'
 				$dispatch('update', { type: 'add', data: newBookmark })
 				document.getElementById('addBookmark').close()
             } catch (error) {
                 status = 'ERROR'
+				message = 'An error occurred'
             }
         }"
 	>
@@ -25,11 +30,11 @@
 			<label for="tags"><strong>Tags</strong></label>
 			<select multiple name="tags" x-data="{ allTags: [] }" x-init="allTags = await api('/tags')">
 				<template x-for="tag in allTags" :key="tag.id">
-					<option x-text="tag.name" x-model="tag.id"></option>
+					<option x-text="tag.name" :value="tag.id"></option>
 				</template>
 			</select>
 		</div>
-
+		<span class="m-b-1 red" x-show="status === 'ERROR'" x-text="message"></span>
 		<button
 			type="submit"
 			:disabled="status === 'SUBMITTING'"
