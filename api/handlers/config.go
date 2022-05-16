@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/abhijit-hota/rengoku-server/utils"
+	"github.com/abhijit-hota/rengoku/server/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

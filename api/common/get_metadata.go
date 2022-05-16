@@ -1,7 +1,7 @@
 package common
 
 import (
-	DB "github.com/abhijit-hota/rengoku-server/db"
+	DB "github.com/abhijit-hota/rengoku/server/db"
 	"bytes"
 	"io"
 	"net/http"

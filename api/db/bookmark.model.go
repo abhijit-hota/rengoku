@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/abhijit-hota/rengoku-server/utils"
+	"github.com/abhijit-hota/rengoku/server/utils"
 	"net/url"
 	"strings"
 )

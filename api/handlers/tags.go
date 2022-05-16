@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	DB "github.com/abhijit-hota/rengoku-server/db"
-	"github.com/abhijit-hota/rengoku-server/utils"
+	DB "github.com/abhijit-hota/rengoku/server/db"
+	"github.com/abhijit-hota/rengoku/server/utils"
 	"fmt"
 	"net/http"
 	"strings"

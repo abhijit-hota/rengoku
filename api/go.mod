@@ -1,4 +1,4 @@
-module github.com/abhijit-hota/rengoku-server
+module github.com/abhijit-hota/rengoku/server
 
 go 1.18
 
