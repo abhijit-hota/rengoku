@@ -1,0 +1,40 @@
+{{define "add-bookmark-dialog"}}
+<dialog id="addBookmark" style="width: 300px">
+	<header><h2>Add new bookmark</h2></header>
+	<form
+		class="m-l-auto col"
+		x-data="{ status: '', message: '' }"
+		@submit.prevent="async () => {
+            status = 'SUBMITTING'
+            try {
+              	const newBookmark = await api('/bookmarks', 'POST', { url: $event.target.elements.url.value })
+                status = 'SUCCESS'
+				$dispatch('update', { type: 'add', data: newBookmark })
+				document.getElementById('addBookmark').close()
+            } catch (error) {
+                status = 'ERROR'
+            }
+        }"
+	>
+		<div class="col m-b-1">
+			<label for="url"><strong>URL</strong><span class="red">*</span></label>
+			<input type="url" placeholder="Add new URL" name="url" id="url" required />
+		</div>
+
+		<div class="col m-b-1">
+			<label for="tags"><strong>Tags</strong></label>
+			<select multiple name="tags" x-data="{ allTags: [] }" x-init="allTags = await api('/tags')">
+				<template x-for="tag in allTags" :key="tag.id">
+					<option x-text="tag.name" x-model="tag.id"></option>
+				</template>
+			</select>
+		</div>
+
+		<button
+			type="submit"
+			:disabled="status === 'SUBMITTING'"
+			x-text="status === 'SUBMITTING' ? 'Loading' : 'Add'"
+		></button>
+	</form>
+</dialog>
+{{end}}

@@ -1,0 +1,35 @@
+{{define "settings-dialog"}}
+<dialog
+	id="settings"
+	x-data="{ 
+        config: {
+            shouldSaveOffline: null,
+            urlActions: [] 
+        } 
+    }"
+	x-init="config = await api('/config')"
+>
+	<header><h2>Settings</h2></header>
+	<div class="col" style="width: 300px">
+		<div class="row m-b-2">
+			<strong>Save pages offline</strong>
+			<input
+				class="m-l-auto"
+				type="checkbox"
+				name="saveOffline"
+				id="saveOffline"
+				:value="config.shouldSaveOffline"
+			/>
+		</div>
+
+		<strong>URL Actions</strong>
+		<template x-for="urlAction in config.urlActions">
+			<div class="url-action">
+				<input type="text" x-text="urlAction.pattern" />
+				<select name="matchDetection" x-text="urlAction.matchDetection"></select>
+				<input type="checkbox" name="saveOffline" id="saveOffline" :value="urlAction.shouldSaveOffline" />
+			</div>
+		</template>
+	</div>
+</dialog>
+{{end}}
