@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"api/common"
-	DB "api/db"
-	"api/utils"
+	"github.com/abhijit-hota/rengoku-server/common"
+	DB "github.com/abhijit-hota/rengoku-server/db"
+	"github.com/abhijit-hota/rengoku-server/utils"
 	"fmt"
 	"net/http"
 	"strconv"

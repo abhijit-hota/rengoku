@@ -1,9 +1,9 @@
 package main
 
 import (
-	"api/db"
-	"api/handlers"
-	"api/utils"
+	"github.com/abhijit-hota/rengoku-server/db"
+	"github.com/abhijit-hota/rengoku-server/handlers"
+	"github.com/abhijit-hota/rengoku-server/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
