@@ -1,67 +1,50 @@
-## GUI options:
+# Rengoku 
+**Set your bookmarks ablaze**
 
-- https://github.com/AllenDang/giu | Ugly
-- https://github.com/fyne-io/fyne 
-- https://gioui.org/
-- https://sciter.com/ embedded in Go
-- A webapp embedded in Go using embed directive. See [this comment](https://www.reddit.com/r/golang/comments/lmvut7/comment/gnz8kct/)
-- https://github.com/wailsapp/wails
+## Inspiration
 
+My project is **RenGoku**, a self-hosted, feature-packed yet lightweight bookmark manager. I am a budding [digital gardener](https://maggieappleton.com/garden-history). I have a private Git repository called `brain` with about 110 markdown files. It contains all sorts of information, stories, ideas, posts, projects, lists etc. I think about. One such list are categorized websites that I want to preserve for eternity. Maybe it's a very productive discussion on a forum or a [classic story](https://www.ibiblio.org/harris/500milemail.html) that makes me appreciate the whole domain of technology. I find myself hoarding a lot of links.
 
-## Todo
+In doing all this, I found existing solutions very limiting. [Raindrop](https://raindrop.io/) felt closest to being the best solution. But still the ergonomics pained me. Also, I cannot pay for the premium at the moment. Sure, I had browser bookmarks. But I don't want to use the same browser across all my devices. Why do none of them have advanced features like tagging based on URL?
 
-- [x] Update /add route to support title, meta data
-- [x] Auto fill missing data configuration
-- [x] Add support for tags
-- [x] LinkTree 
-11
-- [x] Config routes
-  - [x] Get
-  - [x] Update
-  - [x] Save offline config
-- [x] Auto tag
-  - Match detection: https://bitwarden.com/help/uri-match-detection/
-- [ ] Bookmark routes
-  - [x] all 
-  - [ ] filter
-    - [x] tags
-    - [ ] date range
-  - [x] sort
-    - [x] date
-    - [x] alphabetic title
-  - [x] update bookmark tags
-    - [x] individual
-    - [x] bulk
-  - [x] delete 
-    - [x] individual
-    - [x] bulk
-- [x] Tag routes
-  - [x] C
-  - [x] R
-  - [x] U
-  - [x] D
-- [ ] Pagination
-- [x] meta favicon bug
-12
-- [x] Search
-  - https://www.sqlite.org/fts5.html
-- [ ] Import/Export
-- [x] Save offline as HTML
-13
-- [ ] Browser extension
-- [ ] Web frontend
+Hence, I built RenGoku with 3 principles: **ergonomics**, **power** and **ownership**.
 
-14
-- [?] Sync
-- [ ] Phone frontend
+## What it does
 
-- [-] Desktop frontend
-- [-] CLI frontend
-	
+Rengoku is a self-hosted, feature-packed yet lightweight bookmark manager. 
 
-### Finishing
+### Features:
+> ✅: Done | 🚧: WIP | ⏳: Not started
 
-- [ ] Standardize Logging
-- [ ] Standardize errors
-- [ ] Publishing
-- [ ] Trimming binaries
+- ✅ Tagging
+- 🚧 Keeping in folders
+- Actions based on URLs
+  - ✅ Auto tagging
+  - ✅ Save websites based on URL patterns
+  - 🚧 Save to folder
+- ✅ Offline saving of files
+- ✅ Metadata fetching
+- ✅ Web Client
+- ⏳ Import/Export from/to Netscape Bookmark HTML File
+- ⏳ Desktop Client
+- ⏳ Mobile Client
+- ⏳ CLI CLient
+- ⏳ Web Extension
+
+## How I built it
+
+I was totally new to Go.
+
+## Challenges I ran into
+
+## Accomplishments that I'm proud of
+
+## What I learned
+
+## What's next for RenGoku
+
+## Background
+
+I started learning Golang a month ago. Despite doing a couple of tutorials here and there, I couldn't find myself confident in the language. That's when I came across GoHack and decided to take part in the first hackathon in my life that I genuinely wanted to take part in and do it seriously. 
+
+RenGoku is a reference to the character Kyojuro Rengoku from KNY. Set your bookmarks ablaze.
