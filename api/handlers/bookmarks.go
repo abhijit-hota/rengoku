@@ -134,18 +134,16 @@ func AddBookmark(ctx *gin.Context) {
 }
 
 const (
-	Title       = "title"
-	DateCreated = "date_created"
-	DateUpdated = "date_updated"
-	Asc         = "asc"
-	Desc        = "desc"
-	Tags        = "tags"
+	Title = "title"
+	Date  = "date"
+	Asc   = "asc"
+	Desc  = "desc"
+	Tags  = "tags"
 )
 
 var sortColumnMap = map[string]string{
-	Title:       "meta.title",
-	DateCreated: "links.created",
-	DateUpdated: "links.last_updated",
+	Title: "meta.title",
+	Date:  "links.created",
 }
 
 type Query struct {
@@ -154,8 +152,11 @@ type Query struct {
 	Order  string `form:"order"`   /* Asc || Desc */
 
 	// Filter queries
-	FilterBy string  `form:"filter_by"` /* Tags || DateRange */
-	Tags     []int64 `form:"tags[]"`
+	Folder string  `form:"folder"`
+	Tags   []int64 `form:"tags[]"`
+
+	// Search
+	Search string `form:"search"`
 }
 
 func GetBookmarks(ctx *gin.Context) {
@@ -175,8 +176,13 @@ func GetBookmarks(ctx *gin.Context) {
 				LEFT JOIN links_tags ON links_tags.link_id = links.id 
 				LEFT JOIN tags ON tags.id = links_tags.tag_id`
 
-	if queryParams.FilterBy == Tags && len(queryParams.Tags) > 0 {
-		dbQuery += fmt.Sprintf("\nWHERE tags.id IN (%s)", strings.TrimRight(strings.Repeat("?,", len(queryParams.Tags)), ","))
+	prefix := "WHERE"
+	if queryParams.Search != "" {
+		dbQuery += fmt.Sprintf("\nWHERE meta.title LIKE '%%%[1]v%%' OR links.url LIKE '%%%[1]v%%' OR tags.name LIKE '%%%[1]v%%'", queryParams.Search)
+		prefix = "AND"
+	}
+	if len(queryParams.Tags) > 0 {
+		dbQuery += fmt.Sprintf("\n%s tags.id IN (%s)", prefix, strings.TrimRight(strings.Repeat("?,", len(queryParams.Tags)), ","))
 	}
 	dbQuery += "\nGROUP BY links.id"
 
@@ -189,7 +195,9 @@ func GetBookmarks(ctx *gin.Context) {
 		order = strings.ToUpper(order)
 		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
 	}
-	preparedQuery, _ := db.Prepare(dbQuery)
+	preparedQuery, err := db.Prepare(dbQuery)
+	utils.Must(err)
+
 	rows, err := preparedQuery.Query(utils.ToGenericArray(queryParams.Tags)...)
 	utils.Must(err)
 	defer rows.Close()
