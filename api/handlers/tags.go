@@ -63,7 +63,22 @@ type NameRequest struct {
 func GetAllTags(ctx *gin.Context) {
 	db := DB.GetDB()
 
-	rows, err := db.Query(`SELECT * FROM tags`)
+	var query struct {
+		Str string `form:"q"`
+	}
+
+	if err := ctx.BindQuery(&query); err != nil {
+		return
+	}
+
+	dbQuery := "SELECT * FROM tags"
+	if query.Str != "" {
+		dbQuery += " WHERE name LIKE '%" + query.Str + "%'"
+	}
+	preparedStmt, err := db.Prepare(dbQuery)
+	utils.Must(err)
+
+	rows, err := preparedStmt.Query()
 	defer rows.Close()
 	utils.Must(err)
 
