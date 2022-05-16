@@ -157,3 +157,10 @@ main>div {
     display: flex;
     flex-wrap: wrap;
 }
+
+/* Settings */
+
+.url-action {
+    background-color: var(--background-alt);
+    border-radius: 6px;
+}

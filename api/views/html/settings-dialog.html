@@ -9,25 +9,81 @@
     }"
 	x-init="config = await api('/config')"
 >
-	<header><h2>Settings</h2></header>
-	<div class="col" style="width: 300px">
+	<header>
+		<h2>Settings</h2>
+	</header>
+	<div class="col" style="width: 600px; max-height: 700px;" >
 		<div class="row m-b-2">
-			<strong>Save pages offline</strong>
+			<h3>Save pages offline</h3>
 			<input
 				class="m-l-auto"
 				type="checkbox"
-				name="saveOffline"
-				id="saveOffline"
-				:value="config.shouldSaveOffline"
+				name="saveOfflineDefault"
+				id="saveOfflineDefault"
+				x-model="config.shouldSaveOffline"
+				@change="api('/config/save-offline', 'PATCH')"
 			/>
 		</div>
 
-		<strong>URL Actions</strong>
-		<template x-for="urlAction in config.urlActions">
-			<div class="url-action">
-				<input type="text" x-text="urlAction.pattern" />
-				<select name="matchDetection" x-text="urlAction.matchDetection"></select>
-				<input type="checkbox" name="saveOffline" id="saveOffline" :value="urlAction.shouldSaveOffline" />
+		<h3>URL Actions</h3>
+		<hr />
+		<template x-for="(v, i) in config.urlActions" :key="v.pattern">
+			<div class="url-action m-b-2">
+				<div class="row w-100">
+					<div class="col" style="flex-grow: 3">
+						<label :for="'pattern' + i">Pattern</label>
+						<input
+							type="text"
+							:id="'pattern' + i"
+							x-model="config.urlActions[i].pattern"
+							readonly
+							disabled
+						/>
+					</div>
+
+					<div class="col">
+						<label :for="'matchDetection' + i">Match detection</label>
+						<select
+							:id="'matchDetection' + i"
+							:name="'matchDetection' + i"
+							x-model="config.urlActions[i].matchDetection"
+							@change="api('/config/url-action', 'PUT', config.urlActions[i])"
+						>
+							<option value="starts_with">Starts with (default)</option>
+							<option value="regex">Regex</option>
+							<option value="origin">Origin</option>
+							<option value="domain">Domain</option>
+						</select>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col" style="flex-grow: 3">
+						<label :for="'tags'+ i">Auto add these tags</label>
+						<select
+							multiple
+							:name="'tags' + i"
+							x-data="{ allTags: [] }"
+							x-init="allTags = await api('/tags')"
+							x-model="config.urlActions[i].tags"
+							@change="api('/config/url-action', 'PUT', config.urlActions[i])"
+						>
+							<template x-for="tag in allTags" :key="tag.id">
+								<option x-text="tag.name" :value="tag.id"></option>
+							</template>
+						</select>
+					</div>
+					<div class="row">
+						<input
+							type="checkbox"
+							:id="'saveOffline' + i"
+							name="'saveOffline' + i"
+							x-model="config.urlActions[i].shouldSaveOffline"
+							@change.debounce.750="api('/config/url-action', 'PUT', config.urlActions[i])"
+						/>
+						<label for="'saveOffline' + i">Save offline</label>
+					</div>
+				</div>
+				<hr>
 			</div>
 		</template>
 	</div>
