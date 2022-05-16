@@ -114,8 +114,9 @@ func AddBookmark(ctx *gin.Context) {
 	utils.Must(err)
 	defer statement.Close()
 
-	var res BookmarkRes
-	res.Bookmark = body.Bookmark
+	var bm BookmarkRes
+	bm.Bookmark = body.Bookmark
+	bm.NormalizeFavicon()
 
 	for tagIDs.Next() {
 		var tag DB.Tag
@@ -124,13 +125,13 @@ func AddBookmark(ctx *gin.Context) {
 		utils.Must(err)
 
 		fmt.Printf("%+v\n", tag)
-		res.Tags = append(res.Tags, tag)
+		bm.Tags = append(bm.Tags, tag)
 	}
 	err = tagIDs.Err()
 	utils.Must(err)
 
 	tx.Commit()
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, bm)
 }
 
 const (
@@ -231,7 +232,7 @@ func GetBookmarks(ctx *gin.Context) {
 				bm.Tags = append(bm.Tags, tag)
 			}
 		}
-
+		bm.NormalizeFavicon()
 		bookmarks = append(bookmarks, bm)
 	}
 	err = rows.Err()

@@ -1,5 +1,11 @@
 package db
 
+import (
+	"api/utils"
+	"net/url"
+	"strings"
+)
+
 type Meta struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -12,6 +18,18 @@ type Bookmark struct {
 	URL         string `json:"url" binding:"required"`
 	Created     int64  `json:"created,omitempty"`
 	LastUpdated int64  `json:"last_updated,omitempty"`
+}
+
+func (bm *Bookmark) NormalizeFavicon() {
+	if bm.Meta.Favicon == "" {
+		bm.Meta.Favicon = "favicon.ico"
+	}
+	favicon, err := url.Parse(bm.Meta.Favicon)
+	utils.Must(err)
+	if !favicon.IsAbs() {
+		rootURL, _ := url.Parse(bm.URL)
+		bm.Meta.Favicon = rootURL.Scheme + "://" + strings.TrimRight(rootURL.Hostname(), "/") + "/" + strings.TrimLeft(favicon.String(), "/")
+	}
 }
 
 type Tag struct {
