@@ -23,10 +23,17 @@ func (u URLAction) Match(urlStr string) bool {
 		matched, err := regexp.MatchString(u.Pattern, urlStr)
 		Must(err)
 		return matched
-	case "domain":
+	case "origin":
 		parsed, err := url.Parse(urlStr)
 		Must(err)
 		return parsed.Hostname() == u.Pattern
+	case "domain":
+		parsed, err := url.Parse(urlStr)
+		Must(err)
+		hostname := parsed.Hostname()
+		levels := strings.Split(hostname, ".")
+		domain := levels[len(levels)-1] + "." + levels[len(levels)-2]
+		return domain == u.Pattern
 	case "starts_with":
 		fallthrough
 	default:
