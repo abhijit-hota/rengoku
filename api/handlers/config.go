@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"api/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,7 +38,6 @@ func UpdateURLActions(ctx *gin.Context) {
 		if len(urlAction.Tags) == 0 {
 			urlAction.Tags = []int{}
 		}
-		fmt.Printf("%+v\n", urlAction)
 		cfg.URLActions = append(cfg.URLActions, urlAction)
 		break
 	case "PUT":
@@ -47,22 +45,23 @@ func UpdateURLActions(ctx *gin.Context) {
 		for index, rule := range cfg.URLActions {
 			if rule.Pattern == urlAction.Pattern {
 				cfg.URLActions[index] = urlAction
-				break
+				utils.UpdateConfigFile(cfg)
+				ctx.JSON(http.StatusOK, gin.H{"success": true})
+				return
 			}
 		}
-		ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
-		return
+
 	case "DELETE":
 		for index, rule := range cfg.URLActions {
 			if rule.Pattern == urlAction.Pattern {
 				cfg.URLActions = utils.RemoveIndex(cfg.URLActions, index)
+				utils.UpdateConfigFile(cfg)
+				ctx.JSON(http.StatusOK, gin.H{"success": true})
+				return
 			}
 		}
-		ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
-		return
 	}
 
-	utils.UpdateConfigFile(cfg)
-
-	ctx.JSON(http.StatusOK, gin.H{"success": true})
+	ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
+	return
 }

@@ -13,7 +13,7 @@ import (
 type URLAction struct {
 	Pattern           string `toml:"pattern" json:"pattern" binding:"required"`
 	MatchDetection    string `toml:"match_detection" json:"matchDetection"`
-	ShouldSaveOffline bool   `toml:"should_save_offline" json:"shouldSaveOffline,omitempty"`
+	ShouldSaveOffline bool   `toml:"should_save_offline" json:"shouldSaveOffline"`
 	Tags              []int  `toml:"tags" json:"tags"`
 }
 
