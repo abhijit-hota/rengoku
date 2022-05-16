@@ -282,7 +282,21 @@ func DeleteBookmark(ctx *gin.Context) {
 
 	tx, _ := db.Begin()
 
-	stmt := "DELETE FROM links WHERE id = ?"
+	stmt := "SELECT meta_id FROM links WHERE id = ?"
+	rows, _ := tx.Query(stmt, uri.ID)
+	metaIDs := []int{}
+
+	for rows.Next() {
+		var metaID int
+		rows.Scan(&metaID)
+		metaIDs = append(metaIDs, metaID)
+	}
+	utils.Must(rows.Err())
+
+	stmt = fmt.Sprintf("DELETE FROM meta WHERE id in (%s)", strings.TrimRight(strings.Repeat("?,", len(metaIDs)), ","))
+	tx.Exec(stmt, uri.ID)
+
+	stmt = "DELETE FROM links WHERE id = ?"
 	info, _ := tx.Exec(stmt, uri.ID)
 	numDeleted, _ := info.RowsAffected()
 
