@@ -5,3 +5,7 @@ func Must(err error) {
 		panic(err)
 	}
 }
+func MustGet[T any](v T, err error) T {
+	Must(err)
+	return v
+}

@@ -1,10 +1,11 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/handlers"
 	"github.com/abhijit-hota/rengoku/server/utils"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -32,7 +33,7 @@ func main() {
 	db.InitializeDB()
 
 	router := gin.Default()
-	router.Use(CORSMiddleware())
+	// router.Use(CORSMiddleware())
 	router.Static("css", "views/css")
 	router.Static("js", "views/js")
 	router.LoadHTMLGlob("views/html/*.html")
@@ -60,6 +61,15 @@ func main() {
 		tagRouter.PATCH("/:id", handlers.UpdateTagName)
 		tagRouter.DELETE("/:id", handlers.DeleteTag)
 		tagRouter.GET("/tree", handlers.GetLinkTree)
+	}
+
+	folderRouter := apiRouter.Group("/folders")
+	{
+		folderRouter.POST("", handlers.CreateFolder)
+		folderRouter.GET("", handlers.GetRootFolders)
+		folderRouter.PATCH("/:id", handlers.UpdateFolderName)
+		folderRouter.DELETE("/:id", handlers.DeleteFolder)
+		folderRouter.GET("/tree", handlers.GetLinkTree)
 	}
 
 	configRouter := apiRouter.Group("/config")

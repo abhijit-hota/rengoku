@@ -1,9 +1,10 @@
 package db
 
 import (
-	"github.com/abhijit-hota/rengoku/server/utils"
 	"net/url"
 	"strings"
+
+	"github.com/abhijit-hota/rengoku/server/utils"
 )
 
 type Meta struct {
@@ -35,6 +36,14 @@ func (bm *Bookmark) NormalizeFavicon() {
 type Tag struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name" form:"name" binding:"required"`
+	Created     int64  `json:"created,omitempty" form:"created"`
+	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated"`
+}
+
+type Folder struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name" form:"name" binding:"required"`
+	Path        string `json:"path" form:"path"`
 	Created     int64  `json:"created,omitempty" form:"created"`
 	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated"`
 }

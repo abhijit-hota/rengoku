@@ -1,56 +1,16 @@
 package handlers
 
 import (
-	DB "github.com/abhijit-hota/rengoku/server/db"
-	"github.com/abhijit-hota/rengoku/server/utils"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	DB "github.com/abhijit-hota/rengoku/server/db"
+	"github.com/abhijit-hota/rengoku/server/utils"
+
 	"github.com/gin-gonic/gin"
 )
-
-type Node struct {
-	Children Tree  `json:"children"`
-	Links    []int `json:"links"`
-}
-type Tree map[string]*Node
-
-func GetLinkTree(ctx *gin.Context) {
-	db := DB.GetDB()
-
-	rows, err := db.Query(`SELECT links_tags.link_id, tags.path FROM links_tags JOIN tags ON tags.id = links_tags.tag_id;`)
-	utils.Must(err)
-	defer rows.Close()
-
-	linktree := make(Tree)
-
-	for rows.Next() {
-		var linkID int
-		var path string
-
-		err = rows.Scan(&linkID, &path)
-		utils.Must(err)
-
-		pathArr := strings.Split(path, "/")
-		depth := len(pathArr) - 1
-		cursor := linktree
-
-		for index, tag := range pathArr {
-			if cursor[tag] == nil {
-				cursor[tag] = &Node{make(Tree), make([]int, 0)}
-			}
-			if index == depth {
-				cursor[tag].Links = append(cursor[tag].Links, linkID)
-			}
-			cursor = cursor[tag].Children
-		}
-	}
-	err = rows.Err()
-	utils.Must(err)
-	ctx.JSON(http.StatusOK, linktree)
-}
 
 type IdUri struct {
 	ID int64 `uri:"id" binding:"required"`
@@ -115,7 +75,7 @@ func CreateTag(ctx *gin.Context) {
 
 	stmt := "INSERT INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
 	res, err := db.Exec(stmt, req.Name, now, now)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") || utils.MustGet(res.RowsAffected()) == 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
 		return
 	}
@@ -183,5 +143,6 @@ func DeleteTag(ctx *gin.Context) {
 	_, err = tx.Exec(statement, uri.ID)
 	utils.Must(err)
 
+	tx.Commit()
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
