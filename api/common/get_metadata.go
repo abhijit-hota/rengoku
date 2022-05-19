@@ -1,13 +1,14 @@
 package common
 
 import (
-	DB "github.com/abhijit-hota/rengoku/server/db"
 	"bytes"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+
+	DB "github.com/abhijit-hota/rengoku/server/db"
 
 	"golang.org/x/net/html"
 )
@@ -65,26 +66,27 @@ func crawl(node *html.Node, hm *DB.Meta) {
 		crawl(child, hm)
 	}
 }
-func GetMetadata(link string, hm *DB.Meta) error {
+func GetMetadata(link string) (*DB.Meta, error) {
 	link = strings.TrimSpace(link)
 	if !(strings.HasPrefix(link, "https://") || strings.HasPrefix(link, "http://")) {
 		link = "https://" + link
 	}
 
 	if _, err := url.Parse(link); err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := http.Get(link)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	data, _ := io.ReadAll(resp.Body)
 	head := headRegex.Find(data)
 	headNode, _ := html.Parse(bytes.NewReader(head))
 
+	hm := &DB.Meta{}
 	crawl(headNode, hm)
 
-	return nil
+	return hm, nil
 }

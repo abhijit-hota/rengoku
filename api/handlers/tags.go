@@ -75,7 +75,7 @@ func CreateTag(ctx *gin.Context) {
 
 	stmt := "INSERT INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
 	res, err := db.Exec(stmt, req.Name, now, now)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") || utils.MustGet(res.RowsAffected()) == 0 {
+	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
 		return
 	}
@@ -132,17 +132,10 @@ func DeleteTag(ctx *gin.Context) {
 		return
 	}
 
-	tx, _ := db.Begin()
-
 	statement := "DELETE FROM tags WHERE id = ?"
-	info, err := tx.Exec(statement, uri.ID)
+	info, err := db.Exec(statement, uri.ID)
 	utils.Must(err)
 	numDeleted, _ := info.RowsAffected()
 
-	statement = "DELETE FROM links_tags WHERE tag_id = ?"
-	_, err = tx.Exec(statement, uri.ID)
-	utils.Must(err)
-
-	tx.Commit()
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }

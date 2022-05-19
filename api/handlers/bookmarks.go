@@ -26,9 +26,8 @@ type BookmarkRes struct {
 }
 
 func AddBookmark(ctx *gin.Context) {
-	var body BookmarkReq
-
 	db := DB.GetDB()
+	var body BookmarkReq
 
 	if err := ctx.BindJSON(&body); err != nil {
 		return
@@ -37,47 +36,24 @@ func AddBookmark(ctx *gin.Context) {
 	link, err := purell.NormalizeURLString(body.URL, purell.FlagsSafe)
 	body.URL = link
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "URL_ERROR"})
 		return
 	}
+	meta := make(chan DB.Meta)
+
+	go func() {
+		meta <- *utils.MustGet(common.GetMetadata(body.URL))
+	}()
 
 	tx, err := db.Begin()
 	utils.Must(err)
-
-	stmt := "SELECT COUNT(*) FROM links WHERE url = ?"
-	existingCheck := tx.QueryRow(stmt, body.URL)
-	var urlExists int
-	existingCheck.Scan(&urlExists)
-
-	if urlExists != 0 {
-		body.TagIds = []int64{}
-		tx.Commit()
-
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "URL_ALREADY_PRESENT"})
-		return
-	}
-
-	if err := common.GetMetadata(body.URL, &body.Meta); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// TODO: do this parallely? but what about meta id?
-	stmt = "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
-	metaExecinfo, err := tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
-	metaID, _ := metaExecinfo.LastInsertId()
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL."})
-		return
-	}
 
 	now := time.Now().Unix()
 	body.Created = now
 	body.LastUpdated = now
 
-	stmt = "INSERT OR IGNORE INTO links (url, meta_id, created, last_updated) VALUES (?, ?, ?, ?)"
-	linkInsertionInfo, err := tx.Exec(stmt, body.URL, metaID, now, now)
+	stmt := "INSERT INTO links (url, created, last_updated) VALUES (?, ?, ?)"
+	linkInsertionInfo, err := tx.Exec(stmt, body.URL, now, now)
 	utils.Must(err)
 	linkID, _ := linkInsertionInfo.LastInsertId()
 	body.ID = linkID
@@ -114,6 +90,10 @@ func AddBookmark(ctx *gin.Context) {
 		_, err := tx.Exec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, linkID)
 		utils.Must(err)
 	}
+
+	stmt = "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
+	body.Meta = <-meta
+	_, err = tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, bm)
@@ -158,7 +138,7 @@ func GetBookmarks(ctx *gin.Context) {
 					   GROUP_CONCAT(IFNULL(tags.id,"") || "=" || IFNULL(tags.name,"")),
 					   meta.title, meta.favicon, meta.description
 				FROM links 
-				LEFT JOIN meta ON meta.id = links.meta_id 
+				LEFT JOIN meta ON meta.link_id = links.id 
 				LEFT JOIN links_tags ON links_tags.link_id = links.id 
 				LEFT JOIN tags ON tags.id = links_tags.tag_id`
 
@@ -292,22 +272,8 @@ func DeleteBookmark(ctx *gin.Context) {
 		return
 	}
 
-	tx, _ := db.Begin()
-
-	stmt := "SELECT meta_id FROM links WHERE id = ?"
-	row := tx.QueryRow(stmt, uri.ID)
-
-	var metaID int
-	row.Scan(&metaID)
-
-	utils.MustGet(tx.Exec("DELETE FROM meta WHERE id = ?", metaID))
-	utils.MustGet(tx.Exec("DELETE FROM links_tags WHERE link_id = ?", uri.ID))
-	utils.MustGet(tx.Exec("DELETE FROM links_folders WHERE link_id = ?", uri.ID))
-
-	info, _ := tx.Exec("DELETE FROM links WHERE id = ?", uri.ID)
+	info, _ := db.Exec("DELETE FROM links WHERE id = ?", uri.ID)
 	numDeleted, _ := info.RowsAffected()
-
-	utils.Must(tx.Commit())
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
@@ -324,19 +290,10 @@ func BulkDeleteBookmarks(ctx *gin.Context) {
 
 	placeholder := utils.GetMultiParam(len(body.Ids))
 
-	tx, _ := db.Begin()
-
-	stmt := "DELETE FROM links_tags WHERE link_id IN (" + placeholder + ")"
-	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
-
-	stmt = "DELETE FROM links_folders WHERE link_id IN (" + placeholder + ")"
-	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
-
-	stmt = "DELETE FROM links WHERE id IN (" + placeholder + ")"
-	info, _ := tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
+	stmt := "DELETE FROM links WHERE id IN (" + placeholder + ")"
+	info, _ := db.Exec(stmt, utils.ToGenericArray(body.Ids)...)
 	numDeleted, _ := info.RowsAffected()
 
-	utils.Must(tx.Commit())
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
 }
 

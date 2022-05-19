@@ -193,17 +193,10 @@ func DeleteFolder(ctx *gin.Context) {
 		return
 	}
 
-	tx, _ := db.Begin()
-
 	statement := "DELETE FROM folders WHERE id = ?"
-	info, err := tx.Exec(statement, uri.ID)
+	info, err := db.Exec(statement, uri.ID)
 	utils.Must(err)
 	numDeleted, _ := info.RowsAffected()
 
-	statement = "DELETE FROM links_folders WHERE folder_id = ?"
-	_, err = tx.Exec(statement, uri.ID)
-	utils.Must(err)
-
-	tx.Commit()
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
