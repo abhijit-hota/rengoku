@@ -1,12 +1,16 @@
 package utils
 
-func Find[E comparable](s []E, v E) int {
-	for i, vs := range s {
-		if v == vs {
+func FindFunc[E any](input []E, f func(E) bool) int {
+	for i, vs := range input {
+		if f(vs) {
 			return i
 		}
 	}
 	return -1
+}
+
+func Find[E comparable](input []E, v E) int {
+	return FindFunc(input, func(value E) bool { return value == v })
 }
 
 func RemoveIndex[T any](s []T, index int) []T {

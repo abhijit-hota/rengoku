@@ -12,33 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Node struct {
-	Children Tree
-	Name     string
-}
-type Tree map[string]*Node
-
-type StandardizedTree []StandardizedNode
-type StandardizedNode struct {
-	Id       int                `json:"id"`
-	Name     string             `json:"name"`
-	Children []StandardizedTree `json:"children,omitempty"`
-}
-
-func StandardizeTree(tree Tree) StandardizedTree {
-	newTree := make(StandardizedTree, 0)
-
-	for id, node := range tree {
-		newNode := StandardizedNode{
-			Id:   utils.MustGet(strconv.Atoi(id)),
-			Name: node.Name,
-		}
-		if len(node.Children) > 0 {
-			newNode.Children = append(newNode.Children, StandardizeTree(node.Children))
-		}
-		newTree = append(newTree, newNode)
-	}
-	return newTree
+type Tree struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Children []Tree `json:"children,omitempty"`
 }
 
 func GetLinkTree(ctx *gin.Context) {
@@ -48,7 +25,7 @@ func GetLinkTree(ctx *gin.Context) {
 	utils.Must(err)
 	defer rows.Close()
 
-	linkTree := make(Tree)
+	linkTree := []Tree{}
 
 	for rows.Next() {
 		var linkID int
@@ -59,22 +36,27 @@ func GetLinkTree(ctx *gin.Context) {
 		utils.Must(err)
 
 		pathArr := strings.Split(path+strconv.Itoa(linkID), "/")
-		cursor := linkTree
+		cursor := &linkTree
 
 		depth := len(pathArr) - 1
-		for index, tag := range pathArr {
-			if cursor[tag] == nil {
-				cursor[tag] = &Node{make(Tree), ""}
+		for index, idStr := range pathArr {
+			id, _ := strconv.Atoi(idStr)
+
+			foundIdx := utils.FindFunc(*cursor, func(node Tree) bool { return node.Id == id })
+			if foundIdx == -1 {
+				*cursor = append(*cursor, Tree{Id: id})
+				foundIdx = len(*cursor) - 1
 			}
-			if index == depth {
-				cursor[tag].Name = name
+			if depth == index {
+				(*cursor)[foundIdx].Id = linkID
+				(*cursor)[foundIdx].Name = name
 			}
-			cursor = cursor[tag].Children
+			cursor = &((*cursor)[foundIdx].Children)
 		}
 	}
 	err = rows.Err()
 	utils.Must(err)
-	ctx.JSON(http.StatusOK, StandardizeTree(linkTree))
+	ctx.JSON(http.StatusOK, linkTree)
 }
 
 func GetRootFolders(ctx *gin.Context) {
