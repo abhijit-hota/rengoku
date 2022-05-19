@@ -11,10 +11,11 @@ import (
 )
 
 type URLAction struct {
-	Pattern           string `toml:"pattern" json:"pattern" binding:"required"`
-	MatchDetection    string `toml:"match_detection" json:"matchDetection"`
-	ShouldSaveOffline bool   `toml:"should_save_offline" json:"shouldSaveOffline"`
-	Tags              []int  `toml:"tags" json:"tags"`
+	Pattern           string   `toml:"pattern" json:"pattern" binding:"required"`
+	MatchDetection    string   `toml:"match_detection" json:"matchDetection"`
+	ShouldSaveOffline bool     `toml:"should_save_offline" json:"shouldSaveOffline"`
+	Tags              []int64  `toml:"tags" json:"tags"`
+	Folders           []string `toml:"folder" json:"folder"`
 }
 
 func (u URLAction) Match(urlStr string) bool {

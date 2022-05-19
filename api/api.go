@@ -48,9 +48,9 @@ func main() {
 		bookmarkRouter.POST("", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
 
-		bookmarkRouter.PUT("/:id/tag", handlers.AddBookmarkTag)
+		bookmarkRouter.PUT("/:id/:property", handlers.AddBookmarkProperty)
+		bookmarkRouter.DELETE("/:id/:property/:propertyId", handlers.DeleteBookmarkProperty)
 		bookmarkRouter.PUT("/tags", handlers.BulkAddBookmarkTags)
-		bookmarkRouter.DELETE("/:id/tag/:tagId", handlers.DeleteBookmarkTag)
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)
 	}

@@ -1,14 +1,15 @@
 package handlers
 
 import (
-	"github.com/abhijit-hota/rengoku/server/common"
-	DB "github.com/abhijit-hota/rengoku/server/db"
-	"github.com/abhijit-hota/rengoku/server/utils"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/abhijit-hota/rengoku/server/common"
+	DB "github.com/abhijit-hota/rengoku/server/db"
+	"github.com/abhijit-hota/rengoku/server/utils"
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,8 @@ import (
 
 type BookmarkReq struct {
 	DB.Bookmark
-	Tags []int `json:"tags"`
+	TagIds    []int64  `json:"tags"`
+	FolderIds []string `json:"folders"`
 }
 type BookmarkRes struct {
 	DB.Bookmark
@@ -48,7 +50,7 @@ func AddBookmark(ctx *gin.Context) {
 	existingCheck.Scan(&urlExists)
 
 	if urlExists != 0 {
-		body.Tags = []int{}
+		body.TagIds = []int64{}
 		tx.Commit()
 
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "URL_ALREADY_PRESENT"})
@@ -85,7 +87,8 @@ func AddBookmark(ctx *gin.Context) {
 	shouldSaveOffline := utils.GetConfig().ShouldSaveOffline
 	for _, urlAction := range urlActions {
 		if urlAction.Match(body.URL) {
-			body.Tags = append(body.Tags, urlAction.Tags...)
+			body.TagIds = append(body.TagIds, urlAction.Tags...)
+			body.FolderIds = append(body.FolderIds, urlAction.Folders...)
 			shouldSaveOffline = urlAction.ShouldSaveOffline
 		}
 	}
@@ -93,42 +96,24 @@ func AddBookmark(ctx *gin.Context) {
 		go common.SavePage(body.URL, int(linkID))
 	}
 
-	if len(body.Tags) == 0 {
-		body.Tags = []int{}
-		tx.Commit()
-
-		ctx.JSON(http.StatusOK, body)
-		return
-	}
-
-	query := fmt.Sprintf(
-		"SELECT id, name FROM tags WHERE id IN (%s)",
-		strings.TrimRight(strings.Repeat("?,", len(body.Tags)), ","),
-	)
-	statement, _ := tx.Prepare(query)
-	tagIDs, err := statement.Query(utils.ToGenericArray(body.Tags)...)
-	defer tagIDs.Close()
-	utils.Must(err)
-
-	statement, err = tx.Prepare("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)")
-	utils.Must(err)
-	defer statement.Close()
-
 	var bm BookmarkRes
 	bm.Bookmark = body.Bookmark
 	bm.NormalizeFavicon()
 
-	for tagIDs.Next() {
-		var tag DB.Tag
-		tagIDs.Scan(&tag.ID, &tag.Name)
-		_, err := statement.Exec(tag.ID, linkID)
+	for _, tagId := range body.TagIds {
+		_, err := tx.Exec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, linkID)
 		utils.Must(err)
 
-		fmt.Printf("%+v\n", tag)
+		row := tx.QueryRow("SELECT * FROM tags WHERE id = ?", tagId)
+		var tag DB.Tag
+		row.Scan(&tag.ID, &tag.Name, &tag.Created, &tag.LastUpdated)
 		bm.Tags = append(bm.Tags, tag)
 	}
-	err = tagIDs.Err()
-	utils.Must(err)
+
+	for _, folderId := range body.FolderIds {
+		_, err := tx.Exec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, linkID)
+		utils.Must(err)
+	}
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, bm)
@@ -153,7 +138,7 @@ type Query struct {
 	Order  string `form:"order"`   /* Asc || Desc */
 
 	// Filter queries
-	Folder string  `form:"folder"`
+	Folder int64   `form:"folder,omitempty"`
 	Tags   []int64 `form:"tags[]"`
 
 	// Search
@@ -183,7 +168,11 @@ func GetBookmarks(ctx *gin.Context) {
 		prefix = "AND"
 	}
 	if len(queryParams.Tags) > 0 {
-		dbQuery += fmt.Sprintf("\n%s tags.id IN (%s)", prefix, strings.TrimRight(strings.Repeat("?,", len(queryParams.Tags)), ","))
+		dbQuery += fmt.Sprintf("\n%s tags.id IN (%s)", prefix, utils.GetMultiParam(len(queryParams.Tags)))
+		prefix = "AND"
+	}
+	if queryParams.Folder > 0 {
+		dbQuery += fmt.Sprintf("\n%s folders.id = (%v)", prefix, queryParams.Folder)
 	}
 	dbQuery += "\nGROUP BY links.id"
 
@@ -241,40 +230,54 @@ func GetBookmarks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, bookmarks)
 }
 
-func DeleteBookmarkTag(ctx *gin.Context) {
+func DeleteBookmarkProperty(ctx *gin.Context) {
 	db := DB.GetDB()
 	var uri struct {
 		IdUri
-		TagId int `uri:"tagId" binding:"required"`
+		Property   string `uri:"property" binding:"required"`
+		PropertyId int    `uri:"propertyId" binding:"required"`
 	}
 
 	if err := ctx.BindUri(&uri); err != nil {
 		return
 	}
 
-	stmt := "DELETE FROM links_tags WHERE link_id = ? AND tag_id = ?"
-	info, _ := db.Exec(stmt, uri.ID, uri.TagId)
+	if uri.Property != "tag" && uri.Property != "folder" {
+		ctx.AbortWithStatus(400)
+		return
+	}
+
+	stmt := fmt.Sprintf("DELETE FROM links_%[1]vs WHERE link_id = ? AND %[1]v_id = ?", uri.Property)
+	info, _ := db.Exec(stmt, uri.ID, uri.PropertyId)
 	numDeleted, _ := info.RowsAffected()
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
 
-func AddBookmarkTag(ctx *gin.Context) {
+func AddBookmarkProperty(ctx *gin.Context) {
 	db := DB.GetDB()
-	var uri IdUri
-	var newTag struct {
+	var uri struct {
+		IdUri
+		Property string `uri:"property"`
+	}
+
+	var newProperty struct {
 		Id int `json:"id" form:"id" binding:"required"`
 	}
 
 	if err := ctx.BindUri(&uri); err != nil {
 		return
 	}
-	if err := ctx.Bind(&newTag); err != nil {
+	if err := ctx.Bind(&newProperty); err != nil {
+		return
+	}
+	if uri.Property != "tag" && uri.Property != "folder" {
+		ctx.AbortWithStatus(400)
 		return
 	}
 
-	stmt := "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
-	info, err := db.Exec(stmt, newTag.Id, uri.ID)
+	stmt := fmt.Sprintf("INSERT OR IGNORE INTO links_%[1]vs (%[1]v_id, link_id) VALUES (?, ?)", uri.Property)
+	info, err := db.Exec(stmt, newProperty.Id, uri.ID)
 	utils.Must(err)
 	updatedLinks, _ := info.RowsAffected()
 
@@ -292,25 +295,17 @@ func DeleteBookmark(ctx *gin.Context) {
 	tx, _ := db.Begin()
 
 	stmt := "SELECT meta_id FROM links WHERE id = ?"
-	rows, _ := tx.Query(stmt, uri.ID)
-	metaIDs := []int{}
+	row := tx.QueryRow(stmt, uri.ID)
 
-	for rows.Next() {
-		var metaID int
-		rows.Scan(&metaID)
-		metaIDs = append(metaIDs, metaID)
-	}
-	utils.Must(rows.Err())
+	var metaID int
+	row.Scan(&metaID)
 
-	stmt = fmt.Sprintf("DELETE FROM meta WHERE id in (%s)", strings.TrimRight(strings.Repeat("?,", len(metaIDs)), ","))
-	tx.Exec(stmt, uri.ID)
+	utils.MustGet(tx.Exec("DELETE FROM meta WHERE id = ?", metaID))
+	utils.MustGet(tx.Exec("DELETE FROM links_tags WHERE link_id = ?", uri.ID))
+	utils.MustGet(tx.Exec("DELETE FROM links_folders WHERE link_id = ?", uri.ID))
 
-	stmt = "DELETE FROM links WHERE id = ?"
-	info, _ := tx.Exec(stmt, uri.ID)
+	info, _ := tx.Exec("DELETE FROM links WHERE id = ?", uri.ID)
 	numDeleted, _ := info.RowsAffected()
-
-	stmt = "DELETE FROM links_tags WHERE link_id = ?"
-	tx.Exec(stmt, uri.ID)
 
 	utils.Must(tx.Commit())
 
@@ -327,16 +322,19 @@ func BulkDeleteBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	placeholder := strings.TrimRight(strings.Repeat("?,", len(body.Ids)), ",")
+	placeholder := utils.GetMultiParam(len(body.Ids))
 
 	tx, _ := db.Begin()
 
-	stmt := "DELETE FROM links WHERE id IN (" + placeholder + ")"
+	stmt := "DELETE FROM links_tags WHERE link_id IN (" + placeholder + ")"
+	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
+
+	stmt = "DELETE FROM links_folders WHERE link_id IN (" + placeholder + ")"
+	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
+
+	stmt = "DELETE FROM links WHERE id IN (" + placeholder + ")"
 	info, _ := tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
 	numDeleted, _ := info.RowsAffected()
-
-	stmt = "DELETE FROM links_tags WHERE link_id IN (" + placeholder + ")"
-	tx.Exec(stmt, utils.ToGenericArray(body.Ids)...)
 
 	utils.Must(tx.Commit())
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
@@ -356,8 +354,7 @@ func BulkAddBookmarkTags(ctx *gin.Context) {
 	numTotalPairs := len(body.LinkIds) * len(body.TagIds)
 	fmt.Println("calc len:", numTotalPairs)
 
-	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES " + strings.TrimRight(strings.Repeat("(?, ?),", numTotalPairs), ",")
-	fmt.Println("stmt: ", str)
+	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES " + utils.RepeatWithSeparator("(?, ?),", numTotalPairs, ",")
 	stmt, err := db.Prepare(str)
 	utils.Must(err)
 
@@ -368,8 +365,6 @@ func BulkAddBookmarkTags(ctx *gin.Context) {
 			allPairs = append(allPairs, tagId, linkId)
 		}
 	}
-
-	fmt.Println("All len:", len(allPairs))
 
 	info, err := stmt.Exec(utils.ToGenericArray(allPairs)...)
 	utils.Must(err)

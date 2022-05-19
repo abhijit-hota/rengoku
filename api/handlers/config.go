@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"github.com/abhijit-hota/rengoku/server/utils"
 	"net/http"
+
+	"github.com/abhijit-hota/rengoku/server/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,7 +37,7 @@ func UpdateURLActions(ctx *gin.Context) {
 			urlAction.MatchDetection = "starts_with"
 		}
 		if len(urlAction.Tags) == 0 {
-			urlAction.Tags = []int{}
+			urlAction.Tags = []int64{}
 		}
 		cfg.URLActions = append(cfg.URLActions, urlAction)
 		break
