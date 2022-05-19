@@ -13,10 +13,33 @@ import (
 )
 
 type Node struct {
-	Children Tree   `json:"children,omitempty"`
-	Name     string `json:"name"`
+	Children Tree
+	Name     string
 }
 type Tree map[string]*Node
+
+type StandardizedTree []StandardizedNode
+type StandardizedNode struct {
+	Id       int                `json:"id"`
+	Name     string             `json:"name"`
+	Children []StandardizedTree `json:"children,omitempty"`
+}
+
+func StandardizeTree(tree Tree) StandardizedTree {
+	newTree := make(StandardizedTree, 0)
+
+	for id, node := range tree {
+		newNode := StandardizedNode{
+			Id:   utils.MustGet(strconv.Atoi(id)),
+			Name: node.Name,
+		}
+		if len(node.Children) > 0 {
+			newNode.Children = append(newNode.Children, StandardizeTree(node.Children))
+		}
+		newTree = append(newTree, newNode)
+	}
+	return newTree
+}
 
 func GetLinkTree(ctx *gin.Context) {
 	db := DB.GetDB()
@@ -25,7 +48,7 @@ func GetLinkTree(ctx *gin.Context) {
 	utils.Must(err)
 	defer rows.Close()
 
-	linktree := make(Tree)
+	linkTree := make(Tree)
 
 	for rows.Next() {
 		var linkID int
@@ -36,7 +59,7 @@ func GetLinkTree(ctx *gin.Context) {
 		utils.Must(err)
 
 		pathArr := strings.Split(path+strconv.Itoa(linkID), "/")
-		cursor := linktree
+		cursor := linkTree
 
 		depth := len(pathArr) - 1
 		for index, tag := range pathArr {
@@ -51,7 +74,7 @@ func GetLinkTree(ctx *gin.Context) {
 	}
 	err = rows.Err()
 	utils.Must(err)
-	ctx.JSON(http.StatusOK, linktree)
+	ctx.JSON(http.StatusOK, StandardizeTree(linkTree))
 }
 
 func GetRootFolders(ctx *gin.Context) {
