@@ -12,7 +12,7 @@ var db *sql.DB
 
 func InitializeDB() (db *sql.DB) {
 	var err error
-	db, err = sql.Open("sqlite3", os.Getenv("DB_PATH"))
+	db, err = sql.Open("sqlite3", os.Getenv("DB_PATH")+"?foreign_keys=1")
 	utils.Must(err)
 
 	t := `
