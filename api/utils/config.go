@@ -1,21 +1,19 @@
 package utils
 
 import (
-	"bufio"
+	"encoding/json"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
-
-	"github.com/BurntSushi/toml"
 )
 
 type URLAction struct {
-	Pattern           string   `toml:"pattern" json:"pattern" binding:"required"`
-	MatchDetection    string   `toml:"match_detection" json:"matchDetection"`
-	ShouldSaveOffline bool     `toml:"should_save_offline" json:"shouldSaveOffline"`
-	Tags              []int64  `toml:"tags" json:"tags"`
-	Folders           []string `toml:"folder" json:"folder"`
+	Pattern           string   `json:"pattern" binding:"required"`
+	MatchDetection    string   `json:"matchDetection" binding:"required"`
+	ShouldSaveOffline bool     `json:"shouldSaveOffline"`
+	Tags              []int64  `json:"tags,omitempty"`
+	Folders           []string `json:"folder,omitempty"`
 }
 
 func (u URLAction) Match(urlStr string) bool {
@@ -43,8 +41,8 @@ func (u URLAction) Match(urlStr string) bool {
 }
 
 type Config struct {
-	ShouldSaveOffline bool        `toml:"should_save_offline" json:"shouldSaveOffline"`
-	URLActions        []URLAction `toml:"url_action" json:"urlActions"`
+	ShouldSaveOffline bool        `json:"shouldSaveOffline"`
+	URLActions        []URLAction `json:"urlActions,omitempty"`
 }
 
 var config *Config
@@ -52,8 +50,9 @@ var configPath string
 
 func LoadConfig() {
 	configPath = os.Getenv("CONFIG_PATH")
-	_, err := toml.DecodeFile(configPath, &config)
-	Must(err)
+	file := MustGet(os.OpenFile(configPath, os.O_RDONLY, os.ModePerm))
+
+	Must(json.NewDecoder(file).Decode(&config))
 }
 
 func UpdateConfigFile(updatedConfig Config) {
@@ -61,8 +60,9 @@ func UpdateConfigFile(updatedConfig Config) {
 	Must(err)
 	defer file.Close()
 
-	writer := bufio.NewWriter(file)
-	err = toml.NewEncoder(writer).Encode(updatedConfig)
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "\t")
+	err = encoder.Encode(updatedConfig)
 	Must(err)
 
 	// Load config again after updating file

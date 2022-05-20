@@ -1,0 +1,23 @@
+{
+	"shouldSaveOffline": false,
+	"urlActions": [
+		{
+			"pattern": "https://news.ycombinator.com",
+			"matchDetection": "starts_with",
+			"shouldSaveOffline": true,
+			"tags": [
+				3,
+				2
+			]
+		},
+		{
+			"pattern": "https://github.com",
+			"matchDetection": "starts_with",
+			"shouldSaveOffline": true,
+			"tags": [
+				4,
+				5
+			]
+		}
+	]
+}

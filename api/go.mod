@@ -3,7 +3,6 @@ module github.com/abhijit-hota/rengoku/server
 go 1.18
 
 require (
-	github.com/BurntSushi/toml v1.1.0
 	github.com/PuerkitoBio/purell v1.1.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-shiori/obelisk v0.0.0-20220314133127-347d73aad05b
