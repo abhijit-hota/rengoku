@@ -28,19 +28,19 @@ type BookmarkRes struct {
 func AddBookmark(ctx *gin.Context) {
 	db := DB.GetDB()
 	var body BookmarkReq
+	var err error
 
 	if err := ctx.BindJSON(&body); err != nil {
 		return
 	}
 
-	link, err := purell.NormalizeURLString(body.URL, purell.FlagsSafe)
-	body.URL = link
+	body.URL, err = purell.NormalizeURLString(body.URL, purell.FlagsSafe)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "URL_ERROR"})
 		return
 	}
-	meta := make(chan DB.Meta)
 
+	meta := make(chan DB.Meta)
 	go func() {
 		meta <- *utils.MustGet(common.GetMetadata(body.URL))
 	}()
@@ -54,7 +54,11 @@ func AddBookmark(ctx *gin.Context) {
 
 	stmt := "INSERT INTO links (url, created, last_updated) VALUES (?, ?, ?)"
 	linkInsertionInfo, err := tx.Exec(stmt, body.URL, now, now)
-	utils.Must(err)
+	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+		utils.Must(tx.Rollback())
+		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+		return
+	}
 	linkID, _ := linkInsertionInfo.LastInsertId()
 	body.ID = linkID
 
@@ -74,7 +78,7 @@ func AddBookmark(ctx *gin.Context) {
 
 	var bm BookmarkRes
 	bm.Bookmark = body.Bookmark
-	bm.NormalizeFavicon()
+	bm.Tags = []DB.Tag{}
 
 	for _, tagId := range body.TagIds {
 		_, err := tx.Exec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, linkID)
@@ -91,9 +95,11 @@ func AddBookmark(ctx *gin.Context) {
 		utils.Must(err)
 	}
 
-	stmt = "INSERT INTO meta (title, description, favicon) VALUES (?, ?, ?)"
-	body.Meta = <-meta
-	_, err = tx.Exec(stmt, body.Meta.Title, body.Meta.Description, body.Meta.Favicon)
+	stmt = "INSERT INTO meta (title, description, favicon, link_id) VALUES (?, ?, ?, ?)"
+	bm.Meta = <-meta
+	bm.NormalizeFavicon()
+	_, err = tx.Exec(stmt, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, linkID)
+	utils.Must(err)
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, bm)
@@ -201,7 +207,6 @@ func GetBookmarks(ctx *gin.Context) {
 				bm.Tags = append(bm.Tags, tag)
 			}
 		}
-		bm.NormalizeFavicon()
 		bookmarks = append(bookmarks, bm)
 	}
 	err = rows.Err()
@@ -272,7 +277,8 @@ func DeleteBookmark(ctx *gin.Context) {
 		return
 	}
 
-	info, _ := db.Exec("DELETE FROM links WHERE id = ?", uri.ID)
+	info, err := db.Exec("DELETE FROM links WHERE id = ?", uri.ID)
+	utils.Must(err)
 	numDeleted, _ := info.RowsAffected()
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
