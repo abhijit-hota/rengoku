@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -67,15 +66,6 @@ func crawl(node *html.Node, hm *DB.Meta) {
 	}
 }
 func GetMetadata(link string) (*DB.Meta, error) {
-	link = strings.TrimSpace(link)
-	if !(strings.HasPrefix(link, "https://") || strings.HasPrefix(link, "http://")) {
-		link = "https://" + link
-	}
-
-	if _, err := url.Parse(link); err != nil {
-		return nil, err
-	}
-
 	resp, err := http.Get(link)
 	if err != nil {
 		return nil, err

@@ -11,7 +11,6 @@ import (
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
 
-	"github.com/PuerkitoBio/purell"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,9 +33,9 @@ func AddBookmark(ctx *gin.Context) {
 		return
 	}
 
-	body.URL, err = purell.NormalizeURLString(body.URL, purell.FlagsSafe)
+	body.URL, err = utils.NormalizeURL(body.URL)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "URL_ERROR"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
