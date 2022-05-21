@@ -39,11 +39,6 @@ func AddBookmark(ctx *gin.Context) {
 		return
 	}
 
-	meta := make(chan DB.Meta)
-	go func() {
-		meta <- *utils.MustGet(common.GetMetadata(body.URL))
-	}()
-
 	tx, err := db.Begin()
 	utils.Must(err)
 
@@ -60,6 +55,11 @@ func AddBookmark(ctx *gin.Context) {
 	}
 	linkID, _ := linkInsertionInfo.LastInsertId()
 	body.ID = linkID
+
+	meta := make(chan DB.Meta)
+	go func() {
+		meta <- *utils.MustGet(common.GetMetadata(body.URL))
+	}()
 
 	urlActions := utils.GetConfig().URLActions
 
