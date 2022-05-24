@@ -24,11 +24,14 @@
 			<hr />
 		</nav>
 		<aside id="folders"></aside>
-		<main>
+		<main x-data="{ bookmarks: [], more: true }">
 			<div
 				class="bookmark-list"
-				x-data="{ bookmarks: [] }"
-				x-effect="async () => { bookmarks = await api('/bookmarks' + $store.queryParams.get()) }"
+				x-effect="async () => { 
+					const res = await api('/bookmarks' + $store.queryParams.get()) 
+					bookmarks = [...bookmarks, ...res.data]
+					more = res.data.length > 0 // TODO: Fix off-by-one error
+				}"
 				@update.window="() => {
 					switch ($event.detail.type) {
 						case 'add':
@@ -43,6 +46,9 @@
 				}"
 			>
 				{{block "bookmark" .}} {{end}}
+			</div>
+			<div style="text-align: center" x-show="more">
+				<button @click="$store.queryParams.page++">Load more</button>
 			</div>
 		</main>
 		<aside id="filters">{{block "filter-sidebar" .}} {{end}}</aside>

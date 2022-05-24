@@ -128,6 +128,9 @@ type Query struct {
 
 	// Search
 	Search string `form:"search"`
+
+	// Pagination
+	Page int `form:"page"`
 }
 
 func GetBookmarks(ctx *gin.Context) {
@@ -170,6 +173,8 @@ func GetBookmarks(ctx *gin.Context) {
 		order = strings.ToUpper(order)
 		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
 	}
+	// Will optimize when an issue arises
+	dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
 	preparedQuery, err := db.Prepare(dbQuery)
 	utils.Must(err)
 
@@ -211,7 +216,7 @@ func GetBookmarks(ctx *gin.Context) {
 	err = rows.Err()
 	utils.Must(err)
 
-	ctx.JSON(http.StatusOK, bookmarks)
+	ctx.JSON(http.StatusOK, gin.H{"data": bookmarks, "page": queryParams.Page})
 }
 
 func DeleteBookmarkProperty(ctx *gin.Context) {

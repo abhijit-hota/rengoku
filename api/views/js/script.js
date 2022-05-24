@@ -17,6 +17,7 @@ document.addEventListener('alpine:init', () => {
 		folder: '',
 		tags: [],
 		search: '',
+		page: 0,
 
 		get() {
 			const queryParams = [];
@@ -37,6 +38,7 @@ document.addEventListener('alpine:init', () => {
 				const param = tagStr;
 				queryParams.push(param);
 			}
+			queryParams.push(`page=${this.page}`);
 			return '?' + queryParams.join('&');
 		},
 
