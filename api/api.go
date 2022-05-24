@@ -11,6 +11,7 @@ func CreateServer() *gin.Engine {
 	router := gin.Default()
 	router.Static("css", "views/css")
 	router.Static("js", "views/js")
+	router.Static("assets", "views/assets")
 	router.LoadHTMLGlob("views/html/*.html")
 
 	router.GET("/", func(ctx *gin.Context) {
@@ -35,7 +36,6 @@ func CreateServer() *gin.Engine {
 		tagRouter.GET("", handlers.GetAllTags)
 		tagRouter.PATCH("/:id", handlers.UpdateTagName)
 		tagRouter.DELETE("/:id", handlers.DeleteTag)
-		tagRouter.GET("/tree", handlers.GetLinkTree)
 	}
 
 	folderRouter := apiRouter.Group("/folders")

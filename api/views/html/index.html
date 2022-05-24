@@ -8,8 +8,10 @@
 
 		<link rel="stylesheet" href="css/water.min.css" />
 		<link rel="stylesheet" href="css/styles.css" />
+		<link rel="shortcut icon" href="assets/icons/folder.svg" type="image/x-icon" />
 
 		<script src="js/script.js"></script>
+		<script src="js/tree.js"></script>
 		<script src="js/alpine.min.js" defer></script>
 	</head>
 
@@ -23,7 +25,20 @@
 			</div>
 			<hr />
 		</nav>
-		<aside id="folders"></aside>
+		<aside
+			id="folders"
+			x-data="{...fileTree(), tree: []}"
+			x-effect="async () => { 
+				tree = await api('/folders/tree')
+			}"
+		>
+			<h2>Folders</h2>
+			<ul>
+				<template x-for="(level,i) in tree">
+					<li x-html="renderLevel(level,i)"></li>
+				</template>
+			</ul>
+		</aside>
 		<main x-data="{ bookmarks: [], more: true }">
 			<div
 				class="bookmark-list"

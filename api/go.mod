@@ -6,6 +6,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-shiori/obelisk v0.0.0-20220314133127-347d73aad05b
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.13
 	golang.org/x/net v0.0.0-20220513224357-95641704303c

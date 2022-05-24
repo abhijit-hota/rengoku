@@ -2,32 +2,32 @@
 <template x-for="bookmark in bookmarks" :key="bookmark.id">
 	<div class="bookmark" x-data="{ hovered: false }" @mouseover="hovered = true" @mouseout="hovered = false">
 		<div class="row">
-			<img class="favicon" :src="bookmark.meta.favicon" alt="Favicon" />
+			<img class="favicon" x-show="bookmark.meta.favicon" :src="bookmark.meta.favicon" alt="Favicon" />
 			<h3 x-text="bookmark.meta.title"></h3>
 		</div>
 		<small><a :href="bookmark.url" x-text="bookmark.url"></a></small>
 		<p x-text="bookmark.meta.description"></p>
+		<div class="m-l-auto">
+			<button
+				x-show="hovered"
+				style="background-color: var(--text-muted); color: var(--background)"
+				@click="async () => { 
+					try {
+						const res = await api('/bookmarks/' + bookmark.id, 'DELETE')
+						$dispatch('update', { type: 'delete', data: bookmark.id })
+					} catch (error) {
+						console.debug(error);
+					}
+				}"
+			>
+				Delete
+			</button>
+		</div>
 		<div class="footer row">
 			<div class="tags">
 				<template x-for="tag in bookmark.tags" :key="tag.id">
 					<div class="tag" x-text="tag.name"></div>
 				</template>
-			</div>
-			<div class="m-l-auto">
-				<button
-					x-show="hovered"
-					style="background-color: var(--text-muted); color: var(--background)"
-					@click="async () => { 
-						try {
-							const res = await api('/bookmarks/' + bookmark.id, 'DELETE')
-							$dispatch('update', { type: 'delete', data: bookmark.id })
-						} catch (error) {
-							console.debug(error);
-						}
-					}"
-				>
-					Delete
-				</button>
 			</div>
 		</div>
 	</div>

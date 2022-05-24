@@ -1,19 +1,19 @@
 package db
 
 import (
-	"database/sql"
 	"os"
 
 	"github.com/abhijit-hota/rengoku/server/utils"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
+var db *sqlx.DB
 
-func InitializeDB() (db *sql.DB) {
+func InitializeDB() (db *sqlx.DB) {
 	var err error
 	dsn := "file:" + os.Getenv("DB_PATH") + "?_foreign_keys=1"
-	db, err = sql.Open("sqlite3", dsn)
+	db, err = sqlx.Open("sqlite3", dsn)
 	utils.Must(err)
 
 	t := `
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS links_folders (
 	return db
 }
 
-func GetDB() *sql.DB {
+func GetDB() *sqlx.DB {
 	if db == nil {
 		db = InitializeDB()
 	}
