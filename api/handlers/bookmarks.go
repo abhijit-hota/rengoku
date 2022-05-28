@@ -16,8 +16,8 @@ import (
 
 type BookmarkReq struct {
 	DB.Bookmark
-	TagIds    []int64  `json:"tags"`
-	FolderIds []string `json:"folders"`
+	TagIds    []int64 `json:"tags"`
+	FolderIds []int64 `json:"folders"`
 }
 type BookmarkRes struct {
 	DB.Bookmark

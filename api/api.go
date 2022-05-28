@@ -32,6 +32,7 @@ func CreateServer() *gin.Engine {
 	}
 	tagRouter := apiRouter.Group("/tags")
 	{
+		tagRouter.POST("/bulk", handlers.CreateBulkTags)
 		tagRouter.POST("", handlers.CreateTag)
 		tagRouter.GET("", handlers.GetAllTags)
 		tagRouter.PATCH("/:id", handlers.UpdateTagName)

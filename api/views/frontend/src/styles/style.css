@@ -148,21 +148,32 @@ main {
     position: absolute;
 }
 
+.color-fix {
+    color: var(--form-text) !important;
+    background-color: var(--background) !important;
+    border-color: var(--background-alt) !important;
+    margin: unset !important;
+}
+
+.color-fix ul.options {
+    margin: unset;
+    border-radius: 0 0 1ex 1ex;
+}
+
 .input-like {
-    color: var(--form-text);
-    background-color: var(--background);
+    color: var(--form-text) !important;
+    background-color: var(--background) !important;
     font-family: inherit;
     font-size: inherit;
-    margin-right: 6px;
-    margin-bottom: 6px;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    outline: none;
+    margin-right: 6px !important;
+    padding: 10px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    --webkit-appearance: none;
 
-    height: 19px;
-    display: flex;
-    flex-wrap: wrap;
+    height: 19px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
 }
 
 /* Settings */
@@ -170,4 +181,13 @@ main {
 .url-action {
     background-color: var(--background-alt);
     border-radius: 6px;
+}
+
+#add-bookmark-modal {
+    width: 600px;
+}
+
+:root {
+    --sms-options-bg: var(--background-body);
+    --sms-border-radius: 6px;
 }

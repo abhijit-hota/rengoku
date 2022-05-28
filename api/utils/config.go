@@ -9,11 +9,11 @@ import (
 )
 
 type URLAction struct {
-	Pattern           string   `json:"pattern" binding:"required"`
-	MatchDetection    string   `json:"matchDetection" binding:"required"`
-	ShouldSaveOffline bool     `json:"shouldSaveOffline"`
-	Tags              []int64  `json:"tags,omitempty"`
-	Folders           []string `json:"folder,omitempty"`
+	Pattern           string  `json:"pattern" binding:"required"`
+	MatchDetection    string  `json:"matchDetection" binding:"required"`
+	ShouldSaveOffline bool    `json:"shouldSaveOffline"`
+	Tags              []int64 `json:"tags,omitempty"`
+	Folders           []int64 `json:"folder,omitempty"`
 }
 
 func (u URLAction) Match(urlStr string) bool {

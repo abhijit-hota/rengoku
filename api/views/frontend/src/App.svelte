@@ -36,5 +36,5 @@
 <aside id="filters">
 	<Filter />
 </aside>
-<SettingsModal />
 <AddBookmarkModal />
+<SettingsModal />

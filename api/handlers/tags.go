@@ -19,6 +19,9 @@ type IdUri struct {
 type NameRequest struct {
 	Name string `json:"name" form:"name" binding:"required"`
 }
+type BulkNameRequest struct {
+	Names []string `json:"names" binding:"required"`
+}
 
 func GetAllTags(ctx *gin.Context) {
 	db := DB.GetDB()
@@ -85,6 +88,30 @@ func CreateTag(ctx *gin.Context) {
 	tag.ID, _ = res.LastInsertId()
 
 	ctx.JSON(http.StatusOK, tag)
+}
+
+func CreateBulkTags(ctx *gin.Context) {
+	db := DB.GetDB()
+
+	var req BulkNameRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		return
+	}
+
+	now := time.Now().Unix()
+
+	stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
+
+	var tags []DB.Tag
+	for _, name := range req.Names {
+		res, _ := db.Exec(stmt, name, now, now)
+
+		tag := DB.Tag{Created: now, LastUpdated: now, Name: name}
+		tag.ID, _ = res.LastInsertId()
+		tags = append(tags, tag)
+	}
+
+	ctx.JSON(http.StatusOK, tags)
 }
 
 func UpdateTagName(ctx *gin.Context) {
