@@ -1,21 +1,26 @@
 package main
 
 import (
+	"bufio"
 	"net/http"
 
 	"github.com/abhijit-hota/rengoku/server/handlers"
+	"github.com/abhijit-hota/rengoku/server/utils"
 	"github.com/gin-gonic/gin"
 )
 
 func CreateServer() *gin.Engine {
 	router := gin.Default()
-	router.Static("css", "views/css")
-	router.Static("js", "views/js")
-	router.Static("assets", "views/assets")
-	router.LoadHTMLGlob("views/html/*.html")
 
+	router.StaticFS("assets", http.FS(assets))
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.HTML(http.StatusOK, "index.html", nil)
+		html := utils.MustGet(Assets.Open("frontend/dist/index.html"))
+		defer html.Close()
+		rd := bufio.NewReader(html)
+		rd.WriteTo(ctx.Writer)
+	})
+	router.NoRoute(func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	apiRouter := router.Group("/api")

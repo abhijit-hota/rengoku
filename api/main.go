@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"os"
 
 	"github.com/abhijit-hota/rengoku/server/db"
@@ -8,6 +10,10 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
+//go:embed frontend/dist
+var Assets embed.FS
+var assets fs.FS
 
 func main() {
 	// Get default rengoku path
@@ -37,6 +43,9 @@ func main() {
 
 	// Initialize the database. Connect and create tables if not made.
 	db.InitializeDB()
+
+	// Create root embed directory to serve static content from
+	assets = utils.MustGet(fs.Sub(Assets, "frontend/dist/assets"))
 
 	// Create and run the API/Static server
 	CreateServer().Run(":" + os.Getenv("PORT"))
