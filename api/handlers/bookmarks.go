@@ -148,7 +148,9 @@ func GetBookmarks(ctx *gin.Context) {
 				FROM links 
 				LEFT JOIN meta ON meta.link_id = links.id 
 				LEFT JOIN links_tags ON links_tags.link_id = links.id 
-				LEFT JOIN tags ON tags.id = links_tags.tag_id`
+				LEFT JOIN tags ON tags.id = links_tags.tag_id
+				LEFT JOIN links_folders ON links_folders.link_id = links.id 
+				LEFT JOIN folders ON folders.id = links_folders.folder_id`
 
 	prefix := "WHERE"
 	if queryParams.Search != "" {
