@@ -21,6 +21,7 @@
 			"cli": true,
 			"desktop": true,
 			"frontend": true,
-		}
+		},
+		"cSpell.enabled": false
 	}
 }

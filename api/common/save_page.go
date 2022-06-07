@@ -9,7 +9,7 @@ import (
 	"github.com/go-shiori/obelisk"
 )
 
-func SavePage(url string, id int) {
+func SavePage(url string, name string) {
 	req := obelisk.Request{URL: url}
 	arc := obelisk.Archiver{EnableVerboseLog: true}
 	arc.Validate()
@@ -23,7 +23,7 @@ func SavePage(url string, id int) {
 		return
 	}
 
-	f, err := os.OpenFile(os.Getenv("SAVE_OFFLINE_FOLDER")+"/"+fmt.Sprint(id)+".html", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+	f, err := os.OpenFile(os.Getenv("SAVE_OFFLINE_PATH")+"/"+name+".html", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

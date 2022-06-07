@@ -19,7 +19,7 @@ type Bookmark struct {
 	Meta        Meta   `json:"meta"`
 	URL         string `json:"url" binding:"required"`
 	Created     int64  `json:"created,omitempty"`
-	LastUpdated int64  `json:"last_updated,omitempty"`
+	LastUpdated int64  `json:"last_updated,omitempty" db:"last_updated"`
 }
 
 func (bm *Bookmark) NormalizeFavicon() {

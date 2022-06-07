@@ -34,6 +34,8 @@ func CreateServer() *gin.Engine {
 		bookmarkRouter.PUT("/tags", handlers.BulkAddBookmarkTags)
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)
+		bookmarkRouter.PUT("/:id/save", handlers.SaveBookmark)
+
 	}
 	tagRouter := apiRouter.Group("/tags")
 	{

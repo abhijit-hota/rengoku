@@ -47,10 +47,11 @@ const createBookmarksStore = () => {
       try {
         const res = await api("/bookmarks" + q);
         set(res.data);
-        update((bookmarks) => [
-          ...bookmarks,
-          ...res.data.filter(({ id: newID }) => !bookmarks.find(({ id }) => id === newID)),
-        ]);
+        // set([...res.data, ...res.data, ...res.data, ...res.data]);
+        // update((bookmarks) => [
+        //   ...bookmarks,
+        //   ...res.data.filter(({ id: newID }) => !bookmarks.find(({ id }) => id === newID)),
+        // ]);
       } catch (error) {
         return set([]);
       }

@@ -9,7 +9,6 @@
 
   let hovered = false;
   let checked = false;
-  let menuOpen = false;
 
   const deleteBookmark = async () => {
     try {
@@ -19,6 +18,7 @@
       console.debug(error);
     }
   };
+
   const activate = () => {
     hovered = true;
   };
@@ -27,6 +27,22 @@
       hovered = false;
     }
   };
+
+  let menuOpen = false;
+  let focusedID = 0;
+  /** @type {HTMLUListElement} */
+  let ref = null;
+  $: {
+    if (ref) {
+      const btn = [...ref.children].filter(({ tagName }) => tagName === "LI")[focusedID]
+        .firstElementChild;
+      // @ts-ignore
+      btn.focus();
+
+      // const btn = ref.querySelector("#menu-item-button-" + focusedID);
+      // btn.focus();
+    }
+  }
 </script>
 
 <div
@@ -53,20 +69,52 @@
           <img src={ellipsisIcon} alt="Menu" style="filter: invert(1); transform: rotate(90deg);" />
         </button>
         <OutClick
-          includeSelf={true}
           on:outclick={() => {
             menuOpen = false;
           }}
-          excludeByQuerySelector={["#menu-button-" + bookmark.id]}
+          excludeByQuerySelector={[
+            "#menu-button-" + bookmark.id,
+            "save-offline-button-" + bookmark.id,
+          ]}
         >
           {#if menuOpen}
-            <ul class="menu">
-              <li role="none"><button class="no-style">Edit tags</button></li>
-              <li role="none"><button class="no-style">Edit folders</button></li>
+            <ul
+              class="menu"
+              on:keydown|preventDefault={({ key }) => {
+                if (key === "ArrowDown") {
+                  focusedID = (focusedID + 1) % 6;
+                } else if (key === "ArrowUp") {
+                  if (focusedID <= 0) {
+                    focusedID = 5;
+                  } else {
+                    focusedID--;
+                  }
+                }
+              }}
+              bind:this={ref}
+            >
+              <li role="none">
+                <button class="no-style">Edit tags</button>
+              </li>
+              <li role="none">
+                <button class="no-style">Edit folders</button>
+              </li>
               <hr />
-              <li role="none"><button class="no-style">Save Offline</button></li>
-              <li role="none"><button class="no-style">Open saved copy</button></li>
-              <li role="none"><button class="no-style">Update Metadata</button></li>
+              <li role="none">
+                <button
+                  id={"save-offline-button-" + bookmark.id}
+                  class="no-style"
+                  on:click={() => {
+                    api("/bookmarks/" + bookmark.id + "/save", "PUT");
+                  }}>Save Offline</button
+                >
+              </li>
+              <li role="none">
+                <button class="no-style">Open saved copy</button>
+              </li>
+              <li role="none">
+                <button class="no-style">Refetch Metadata</button>
+              </li>
               <hr />
               <li role="none">
                 <button class="no-style red" on:click={deleteBookmark}>Delete</button>

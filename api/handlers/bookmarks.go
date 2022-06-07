@@ -72,7 +72,7 @@ func AddBookmark(ctx *gin.Context) {
 		}
 	}
 	if shouldSaveOffline {
-		go common.SavePage(body.URL, int(linkID))
+		go common.SavePage(body.URL, fmt.Sprint(linkID))
 	}
 
 	var bm BookmarkRes
@@ -340,4 +340,19 @@ func BulkAddBookmarkTags(ctx *gin.Context) {
 	updatedLinks, _ := info.RowsAffected()
 
 	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks})
+}
+
+func SaveBookmark(ctx *gin.Context) {
+	var uri IdUri
+	if err := ctx.BindUri(&uri); err != nil {
+		return
+	}
+
+	db := DB.GetDB()
+
+	var bm DB.Bookmark
+	utils.Must(db.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
+
+	common.SavePage(bm.URL, fmt.Sprint(uri.ID))
+	ctx.JSON(http.StatusOK, gin.H{"saved": true})
 }
