@@ -1,7 +1,7 @@
 <script>
   import MultiSelect from "svelte-multiselect";
   import { bookmarks } from "../lib/stores";
-  import { api } from "../lib/api";
+  import { api } from "../lib";
 
   let status, message, url;
   let selectedTags = [];
@@ -94,3 +94,9 @@
     {status === "SUBMITTING" ? "Loading" : "Add"}
   </button>
 </dialog>
+
+<style>
+  #add-bookmark-modal {
+    width: 600px;
+  }
+</style>

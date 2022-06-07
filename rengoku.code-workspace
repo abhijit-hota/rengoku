@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "api",
+			// "name": "_api"
+		},
+		{
+			"path": "/home/kreta/.rengoku"
+		},
+		{
+			"path": "frontend"
+		},
+		{
+			"path": ".",
+			"name": "root"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"api": true,
+			"cli": true,
+			"desktop": true,
+			"frontend": true,
+		}
+	}
+}

@@ -5,15 +5,15 @@ import (
 
 	"github.com/abhijit-hota/rengoku/server/utils"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var db *sqlx.DB
 
 func InitializeDB() (db *sqlx.DB) {
 	var err error
-	dsn := "file:" + os.Getenv("DB_PATH") + "?_foreign_keys=1"
-	db, err = sqlx.Open("sqlite3", dsn)
+	dsn := "file:" + os.Getenv("DB_PATH") + "?_pragma=foreign_keys(1)"
+	db, err = sqlx.Open("sqlite", dsn)
 	utils.Must(err)
 
 	t := `

@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-//go:embed frontend/dist
+//go:embed dist
 var Assets embed.FS
 var assets fs.FS
 
@@ -45,7 +45,7 @@ func main() {
 	db.InitializeDB()
 
 	// Create root embed directory to serve static content from
-	assets = utils.MustGet(fs.Sub(Assets, "frontend/dist/assets"))
+	assets = utils.MustGet(fs.Sub(Assets, "dist/assets"))
 
 	// Create and run the API/Static server
 	CreateServer().Run(":" + os.Getenv("PORT"))

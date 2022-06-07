@@ -1,0 +1,131 @@
+:root {
+    --sms-options-bg: var(--background-body);
+    --sms-border-radius: 6px;
+}
+
+/* Override */
+h1,
+h2,
+h3 {
+    margin: unset;
+}
+
+button {
+    margin-bottom: unset;
+}
+
+.no-style {
+    all: unset;
+}
+
+/** Global **/
+body {
+    max-width: 70vw;
+    display: grid;
+    grid-template-areas:
+        "nav nav nav"
+        "folders bookmarks filters"
+    ;
+    margin-top: 0 !important;
+}
+
+dialog {
+    margin-top: 100px;
+}
+
+/* Utilities */
+
+.w-full {
+    width: 100%;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
+.m-l-auto {
+    margin-left: auto !important;
+}
+
+.m-b-1 {
+    margin-bottom: 1em;
+}
+
+.m-b-2 {
+    margin-bottom: 2em;
+}
+
+
+.red {
+    color: rgb(231, 126, 126);
+}
+
+.icon-button {
+    padding: 0.4em;
+    margin: 0;
+    width: 1.8em;
+    aspect-ratio: 1/1;
+}
+
+/* Tag input */
+#autocomplete {
+    position: absolute;
+}
+
+.color-fix {
+    color: var(--form-text) !important;
+    background-color: var(--background) !important;
+    border-color: var(--background-alt) !important;
+    margin: unset !important;
+}
+
+.color-fix ul.options {
+    margin: unset;
+    border-radius: 0 0 1ex 1ex;
+}
+
+.input-like {
+    color: var(--form-text) !important;
+    background-color: var(--background) !important;
+    font-family: inherit;
+    font-size: inherit;
+    margin-right: 6px !important;
+    padding: 10px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    --webkit-appearance: none;
+
+    height: 19px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+
+.sticky {
+    background-color: var(--background-body);
+    position: sticky;
+    /* body-margin-top + line-height * h1-font-size + hr-margin-top + hr-height + hr-margin-bottom + nav-margin-bottom  */
+    top: calc(20px + 1.4 * 2.2em + 0.5em + 1px + 0.5em + 1em);
+    align-self: start;
+}
+
+/* Tags */
+.tags {
+    display: flex;
+    margin-top: 0.5em;
+    flex-wrap: wrap;
+}
+
+.tag {
+    background-color: var(--background);
+    border-radius: 10px;
+    margin: 4px;
+    margin-left: 0px;
+    padding: 4px 8px;
+    width: max-content;
+}
