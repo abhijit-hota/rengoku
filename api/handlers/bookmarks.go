@@ -142,7 +142,7 @@ func GetBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, 
+	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, links.last_saved_offline,
 					   GROUP_CONCAT(IFNULL(tags.id,"") || "=" || IFNULL(tags.name,"")),
 					   meta.title, meta.favicon, meta.description
 				FROM links 
@@ -193,6 +193,7 @@ func GetBookmarks(ctx *gin.Context) {
 			&bm.URL,
 			&bm.Created,
 			&bm.LastUpdated,
+			&bm.LastSavedOffline,
 			&tagStr,
 			&bm.Meta.Title,
 			&bm.Meta.Favicon,
@@ -354,5 +355,47 @@ func SaveBookmark(ctx *gin.Context) {
 	utils.Must(db.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
 
 	common.SavePage(bm.URL, fmt.Sprint(uri.ID))
+
+	now := time.Now().Unix()
+	db.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", now, uri.ID)
+
 	ctx.JSON(http.StatusOK, gin.H{"saved": true})
+}
+
+func RefetchMetadata(ctx *gin.Context) {
+	var uri IdUri
+	if err := ctx.BindUri(&uri); err != nil {
+		return
+	}
+
+	db := DB.GetDB()
+
+	var bm DB.Bookmark
+	utils.Must(
+		db.Get(
+			&bm,
+			`SELECT links.*, 
+			meta.title "meta.title", 
+			meta.favicon "meta.favicon", 
+			meta.description "meta.description"
+			FROM links LEFT JOIN meta ON meta.link_id = links.id
+			WHERE links.id = ?`,
+			uri.ID,
+		),
+	)
+
+	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
+	bm.NormalizeFavicon()
+
+	now := time.Now().Unix()
+
+	tx := db.MustBegin()
+	tx.MustExec(
+		"UPDATE meta SET title = ?, description = ?, favicon = ? WHERE link_id = ?",
+		bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, bm.ID,
+	)
+	tx.MustExec("UPDATE links SET last_updated = ? WHERE id = ?", now, bm.ID)
+	utils.Must(tx.Commit())
+
+	ctx.JSON(http.StatusOK, bm.Meta)
 }

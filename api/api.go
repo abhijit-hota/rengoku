@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/abhijit-hota/rengoku/server/handlers"
 	"github.com/abhijit-hota/rengoku/server/utils"
@@ -19,6 +21,21 @@ func CreateServer() *gin.Engine {
 		rd := bufio.NewReader(html)
 		rd.WriteTo(ctx.Writer)
 	})
+
+	router.GET("/saved/:id", func(ctx *gin.Context) {
+		saveLinkID := ctx.Param("id")
+		offlinePath := GetRengokuPath() + rengokuOfflineDir
+
+		dir := utils.MustGet(os.ReadDir(offlinePath))
+		for _, v := range dir {
+			if strings.HasPrefix(v.Name(), saveLinkID) {
+				ctx.File(offlinePath + v.Name())
+				return
+			}
+		}
+		ctx.AbortWithStatus(http.StatusNotFound)
+	})
+
 	router.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
@@ -35,6 +52,7 @@ func CreateServer() *gin.Engine {
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)
 		bookmarkRouter.PUT("/:id/save", handlers.SaveBookmark)
+		bookmarkRouter.PUT("/:id/meta", handlers.RefetchMetadata)
 
 	}
 	tagRouter := apiRouter.Group("/tags")

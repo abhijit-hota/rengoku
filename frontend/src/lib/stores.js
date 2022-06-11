@@ -40,7 +40,9 @@ export const queryStr = derived(queryParams, (store) => {
 });
 
 const createBookmarksStore = () => {
-  const { set, subscribe, update } = writable([]);
+  /** @type {import("svelte/store").Writable<Bookmark[]>} */
+  const bm = writable([]);
+  const { set, subscribe, update } = bm;
   return {
     subscribe,
     fetch: async (q) => {
@@ -65,6 +67,13 @@ const createBookmarksStore = () => {
         bookmarks.splice(i, 1);
         return bookmarks;
       });
+    },
+    updateOne: (id, /** @type {Bookmark} */ updatedBookmark) => {
+      update((bookmarks) =>
+        bookmarks.map((bookmark) =>
+          bookmark.id === id ? { ...bookmark, ...updatedBookmark } : bookmark
+        )
+      );
     },
   };
 };

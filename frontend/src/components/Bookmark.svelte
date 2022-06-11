@@ -3,7 +3,9 @@
   import { api } from "../lib";
   import ellipsisIcon from "../assets/ellipsis.png";
   import OutClick from "./OutClick.svelte";
+  import { identity } from "svelte/internal";
 
+  /**@type {Bookmark}*/
   export let bookmark;
   export let toggleMark;
 
@@ -38,9 +40,6 @@
         .firstElementChild;
       // @ts-ignore
       btn.focus();
-
-      // const btn = ref.querySelector("#menu-item-button-" + focusedID);
-      // btn.focus();
     }
   }
 </script>
@@ -54,7 +53,7 @@
 >
   <div class="row header-row">
     {#if bookmark.meta.favicon}
-      <img class="favicon" src={bookmark.meta.favicon} alt="Favicon" />
+      <img class="favicon" src={bookmark.meta.favicon} alt="🔥" />
     {/if}
     <h3 style="text-overflow: ellipsis;">{bookmark.meta.title}</h3>
     <div class="m-l-auto row">
@@ -80,7 +79,13 @@
           {#if menuOpen}
             <ul
               class="menu"
-              on:keydown|preventDefault={({ key }) => {
+              on:keydown={(e) => {
+                const { key } = e;
+                if (!(key === "ArrowUp" || key === "ArrowDown")) {
+                  return;
+                }
+
+                e.preventDefault();
                 if (key === "ArrowDown") {
                   focusedID = (focusedID + 1) % 6;
                 } else if (key === "ArrowUp") {
@@ -109,11 +114,30 @@
                   }}>Save Offline</button
                 >
               </li>
+              {#if bookmark.last_saved_offline}
+                <li role="none">
+                  <a
+                    class="no-style"
+                    target="_blank"
+                    href={"http://localhost:8080/saved/" + bookmark.id}>Open saved copy</a
+                  >
+                </li>
+              {/if}
               <li role="none">
-                <button class="no-style">Open saved copy</button>
-              </li>
-              <li role="none">
-                <button class="no-style">Refetch Metadata</button>
+                <button
+                  class="no-style"
+                  on:click={async () => {
+                    try {
+                      const /** @type {Bookmark["meta"]}*/ res = await api(
+                          "/bookmarks/" + bookmark.id + "/meta",
+                          "PUT"
+                        );
+                      bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}>Refetch Metadata</button
+                >
               </li>
               <hr />
               <li role="none">
@@ -125,8 +149,8 @@
       </div>
       <input
         type="checkbox"
-        name={bookmark.id}
-        id={bookmark.id}
+        name={bookmark.id.toString()}
+        id={bookmark.id.toString()}
         class="bookmark-checkbox"
         bind:checked
         on:change={() => toggleMark(bookmark.id)}
@@ -209,19 +233,19 @@
   .popup .menu hr {
     margin: 0;
   }
-  .popup .menu li button {
+  .popup .menu li > * {
     padding: 0.75em;
     cursor: pointer;
     width: calc(100% - 0.75em * 2);
   }
-  .popup .menu li button:hover,
-  .popup .menu li button:focus {
+  .popup .menu li > *:hover,
+  .popup .menu li > *:focus {
     background-color: var(--button-hover);
   }
-  .popup .menu li:last-child button {
+  .popup .menu li:last-child > * {
     border-radius: 0 0 6px 6px;
   }
-  .popup .menu li:first-child button {
+  .popup .menu li:first-child > * {
     border-radius: 6px 6px 0 0;
   }
 </style>

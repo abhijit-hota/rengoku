@@ -15,11 +15,12 @@ type Meta struct {
 }
 
 type Bookmark struct {
-	ID          int64  `json:"id"`
-	Meta        Meta   `json:"meta"`
-	URL         string `json:"url" binding:"required"`
-	Created     int64  `json:"created,omitempty"`
-	LastUpdated int64  `json:"last_updated,omitempty" db:"last_updated"`
+	ID               int64  `json:"id"`
+	Meta             Meta   `json:"meta"`
+	URL              string `json:"url" binding:"required"`
+	Created          int64  `json:"created,omitempty"`
+	LastUpdated      int64  `json:"last_updated,omitempty" db:"last_updated"`
+	LastSavedOffline int64  `json:"last_saved_offline,omitempty" db:"last_saved_offline"`
 }
 
 func (bm *Bookmark) NormalizeFavicon() {

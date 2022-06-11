@@ -72,11 +72,9 @@ func GetMetadata(link string) (*DB.Meta, error) {
 	}
 
 	data, _ := io.ReadAll(resp.Body)
-	head := headRegex.Find(data)
-	headNode, _ := html.Parse(bytes.NewReader(head))
+	headNode, _ := html.Parse(bytes.NewReader(data))
 
 	hm := &DB.Meta{}
 	crawl(headNode, hm)
-
 	return hm, nil
 }
