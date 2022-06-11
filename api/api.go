@@ -16,7 +16,7 @@ func CreateServer() *gin.Engine {
 
 	router.StaticFS("assets", http.FS(assets))
 	router.GET("/", func(ctx *gin.Context) {
-		html := utils.MustGet(Assets.Open("dist/index.html"))
+		html := utils.MustGet(Assets.Open("frontend-dist/index.html"))
 		defer html.Close()
 		rd := bufio.NewReader(html)
 		rd.WriteTo(ctx.Writer)
