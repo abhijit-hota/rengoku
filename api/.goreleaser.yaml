@@ -1,0 +1,29 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+project_name: rengoku
+before:
+    hooks:
+        # You may remove this if you don't use go modules.
+        - go mod tidy
+        - sh -c "cd ../frontend && npm run build"
+builds:
+    - env: [CGO_ENABLED=0]
+      targets:
+        - go_118_first_class
+archives:
+    - replacements:
+          amd64: 64-bit
+          386: 32-bit
+          darwin: macOS
+      format_overrides:
+          - goos: windows
+            format: zip
+nfpms:
+    - id: linux-packs
+      maintainer: Abhijit Hota <abhihota025@gmail.com>
+      description: 'Rengoku: A Powerful Bookmark Manager'
+      homepage: https://github.com/abhijit-hota/rengoku
+      license: MIT
+      formats:
+          - deb
+          - rpm

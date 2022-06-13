@@ -6,31 +6,31 @@ tmp_dir = "tmp"
   bin = "./tmp/main"
   cmd = "go build  -ldflags '-s -w' -o ./tmp/main ."
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "frontend"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "frontend-dist", "dist"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
   full_bin = ""
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "db"]
+  include_ext = ["go", "tpl", "tmpl", "html"]
   kill_delay = "0s"
   log = "build-errors.log"
   send_interrupt = false
   stop_on_error = true
 
 [color]
-  app = ""
+  app = "pink"
   build = "yellow"
   main = "magenta"
   runner = "green"
   watcher = "cyan"
 
 [log]
-  time = false
+  time = true
 
 [misc]
-  clean_on_exit = false
+  clean_on_exit = true
 
 [screen]
-  clear_on_rebuild = false
+  clear_on_rebuild = true
