@@ -19,11 +19,12 @@ archives:
           - goos: windows
             format: zip
 nfpms:
-    - id: linux-packs
-      maintainer: Abhijit Hota <abhihota025@gmail.com>
+    - maintainer: Abhijit Hota <abhihota025@gmail.com>
       description: 'Rengoku: A Powerful Bookmark Manager'
       homepage: https://github.com/abhijit-hota/rengoku
       license: MIT
       formats:
           - deb
           - rpm
+release:
+  prerelease: auto
