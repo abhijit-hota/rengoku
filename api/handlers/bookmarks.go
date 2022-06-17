@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -398,4 +399,43 @@ func RefetchMetadata(ctx *gin.Context) {
 	utils.Must(tx.Commit())
 
 	ctx.JSON(http.StatusOK, bm.Meta)
+}
+
+func ImportBookmarks(ctx *gin.Context) {
+	netscapeExport := utils.MustGet(ctx.FormFile("export"))
+	file, _ := netscapeExport.Open()
+	asBytes, _ := io.ReadAll(file)
+	parsedLinks, _ := common.ParseNetscapeData(string(asBytes))
+
+	db := DB.GetDB()
+	tx := db.MustBegin()
+
+	bookmarks := make([]DB.Bookmark, 0)
+
+	for _, v := range parsedLinks {
+		now := time.Now().Unix()
+		bm := DB.Bookmark{
+			URL: v.Href,
+			Meta: DB.Meta{
+				Title:       v.Title,
+				Description: "",
+				Favicon:     v.IconUri,
+			},
+			Created:     now,
+			LastUpdated: now,
+		}
+		bookmarks = append(bookmarks, bm)
+	}
+
+	for _, bm := range bookmarks {
+		now := time.Now().Unix()
+		stmt := "INSERT OR IGNORE INTO links (url, created, last_updated) VALUES (?, ?, ?)"
+		linkInsertionInfo := tx.MustExec(stmt, bm.URL, now, now)
+		linkID, _ := linkInsertionInfo.LastInsertId()
+
+		stmt = "INSERT INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
+		tx.MustExec(stmt, linkID, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon)
+
+	}
+	utils.Must(tx.Commit())
 }

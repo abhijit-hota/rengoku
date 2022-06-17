@@ -82,16 +82,28 @@
 
 <div>
   <button
-    class="w-full"
+    class="w-full m-b-2"
     on:click={() => {
       // @ts-ignore
       document.getElementById("settings").showModal();
     }}>Open Settings</button
   >
+  <form
+    on:submit|preventDefault={(e) => {
+      const formElem = e.target;
+      // @ts-ignore
+      api("/bookmarks/import", "POST", new FormData(formElem));
+      // console.debug(data);
+    }}
+  >
+    <input type="file" name="export" required />
+    <button class="w-full" type="submit">Import</button>
+  </form>
 </div>
 
 <style>
-  input[type="radio"], label {
+  input[type="radio"],
+  label {
     cursor: pointer;
   }
   .tags .tag {
