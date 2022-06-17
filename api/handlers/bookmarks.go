@@ -410,19 +410,26 @@ func ImportBookmarks(ctx *gin.Context) {
 	db := DB.GetDB()
 	tx := db.MustBegin()
 
-	bookmarks := make([]DB.Bookmark, 0)
+	type ExtBookmark struct {
+		DB.Bookmark
+		Tags []string
+	}
+	bookmarks := make([]ExtBookmark, 0)
 
 	for _, v := range parsedLinks {
 		now := time.Now().Unix()
-		bm := DB.Bookmark{
-			URL: v.Href,
-			Meta: DB.Meta{
-				Title:       v.Title,
-				Description: "",
-				Favicon:     v.IconUri,
+		bm := ExtBookmark{
+			Bookmark: DB.Bookmark{
+				URL: v.Href,
+				Meta: DB.Meta{
+					Title:       v.Title,
+					Description: "",
+					Favicon:     v.IconUri,
+				},
+				Created:     now,
+				LastUpdated: now,
 			},
-			Created:     now,
-			LastUpdated: now,
+			Tags: v.Tags,
 		}
 		bookmarks = append(bookmarks, bm)
 	}
@@ -430,12 +437,26 @@ func ImportBookmarks(ctx *gin.Context) {
 	for _, bm := range bookmarks {
 		now := time.Now().Unix()
 		stmt := "INSERT OR IGNORE INTO links (url, created, last_updated) VALUES (?, ?, ?)"
-		linkInsertionInfo := tx.MustExec(stmt, bm.URL, now, now)
-		linkID, _ := linkInsertionInfo.LastInsertId()
+		tx.MustExec(stmt, bm.URL, now, now)
+
+		stmt = "SELECT id FROM links WHERE url = ?"
+		var linkID int
+		tx.Get(&linkID, stmt, bm.URL)
 
 		stmt = "INSERT INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
 		tx.MustExec(stmt, linkID, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon)
+		for _, tag := range bm.Tags {
+			now := time.Now().Unix()
+			stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
+			tx.MustExec(stmt, tag, now, now)
 
+			stmt = "SELECT id FROM tags WHERE name = ?"
+			var tagId int
+			tx.Get(&tagId, stmt, tag)
+
+			stmt = "INSERT OR IGNORE INTO links_tags (link_id, tag_id) VALUES (?, ?)"
+			tx.MustExec(stmt, linkID, tagId)
+		}
 	}
 	utils.Must(tx.Commit())
 }
