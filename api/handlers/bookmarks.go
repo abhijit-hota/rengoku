@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/abhijit-hota/rengoku/server/common"
@@ -407,16 +408,17 @@ func ImportBookmarks(ctx *gin.Context) {
 	asBytes, _ := io.ReadAll(file)
 	parsedLinks, _ := common.ParseNetscapeData(string(asBytes))
 
-	db := DB.GetDB()
-	tx := db.MustBegin()
+	_, shouldFetchMetadata := ctx.GetQuery("fetchMeta")
 
 	type ExtBookmark struct {
 		DB.Bookmark
-		Tags []string
+		Tags   []string
+		Folder string
 	}
-	bookmarks := make([]ExtBookmark, 0)
+	bookmarks := make([]ExtBookmark, len(parsedLinks))
+	var wg sync.WaitGroup
 
-	for _, v := range parsedLinks {
+	for i, v := range parsedLinks {
 		now := time.Now().Unix()
 		bm := ExtBookmark{
 			Bookmark: DB.Bookmark{
@@ -429,11 +431,28 @@ func ImportBookmarks(ctx *gin.Context) {
 				Created:     now,
 				LastUpdated: now,
 			},
-			Tags: v.Tags,
+			Tags:   v.Tags,
+			Folder: v.FolderPath,
 		}
-		bookmarks = append(bookmarks, bm)
+		if shouldFetchMetadata {
+			wg.Add(1)
+			go func(index int, _bm ExtBookmark) {
+				defer wg.Done()
+				meta, err := common.GetMetadata(_bm.URL)
+				if err == nil {
+					_bm.Meta = *meta
+					_bm.Bookmark.NormalizeFavicon()
+				}
+				bookmarks[index] = _bm
+			}(i, bm)
+		} else {
+			bookmarks[i] = bm
+		}
 	}
+	wg.Wait()
 
+	db := DB.GetDB()
+	tx := db.MustBegin()
 	for _, bm := range bookmarks {
 		now := time.Now().Unix()
 		stmt := "INSERT OR IGNORE INTO links (url, created, last_updated) VALUES (?, ?, ?)"
@@ -443,7 +462,7 @@ func ImportBookmarks(ctx *gin.Context) {
 		var linkID int
 		tx.Get(&linkID, stmt, bm.URL)
 
-		stmt = "INSERT INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
+		stmt = "INSERT OR IGNORE INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
 		tx.MustExec(stmt, linkID, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon)
 		for _, tag := range bm.Tags {
 			now := time.Now().Unix()
