@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"q"
 	"strconv"
 	"strings"
 	"sync"
@@ -178,7 +179,7 @@ func GetBookmarks(ctx *gin.Context) {
 		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
 	}
 	// Will optimize when an issue arises
-	dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
+	// dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
 	preparedQuery, err := db.Prepare(dbQuery)
 	utils.Must(err)
 
@@ -476,6 +477,22 @@ func ImportBookmarks(ctx *gin.Context) {
 			stmt = "INSERT OR IGNORE INTO links_tags (link_id, tag_id) VALUES (?, ?)"
 			tx.MustExec(stmt, linkID, tagId)
 		}
+
+		path := ""
+		var folderID int
+		for _, folder := range strings.Split(bm.Folder, common.FolderPathSeparator) {
+			now := time.Now().Unix()
+
+			stmt = "INSERT OR IGNORE INTO folders (name, path, created, last_updated) VALUES (?, ?, ?, ?)"
+			tx.MustExec(stmt, folder, path, now, now)
+
+			tx.Get(&folderID, "SELECT id FROM folders WHERE name = ? AND PATH = ?", folder, path)
+
+			path += strconv.Itoa(folderID) + "/"
+		}
+		q.Q(linkID, folderID) // DEBUG
+		stmt = "INSERT OR IGNORE INTO links_folders (link_id, folder_id) VALUES (?, ?)"
+		tx.MustExec(stmt, linkID, folderID)
 	}
 	utils.Must(tx.Commit())
 }

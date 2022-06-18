@@ -64,6 +64,8 @@ func getAnchorAttributes(anchorStr string) bookmark {
 	return bm
 }
 
+const FolderPathSeparator = "␝"
+
 func ParseNetscapeData(str string) ([]bookmark, error) {
 	if !strings.HasPrefix(str, "<!DOCTYPE NETSCAPE-Bookmark-file-1>") {
 		return nil, errors.New("nope")
@@ -88,7 +90,7 @@ func ParseNetscapeData(str string) ([]bookmark, error) {
 				aTag = entity[:lastA+4]
 			}
 			bm := getAnchorAttributes(aTag)
-			bm.FolderPath = strings.Join(path, "/")
+			bm.FolderPath = strings.Join(path, FolderPathSeparator)
 			bookmarks = append(bookmarks, bm)
 		}
 
