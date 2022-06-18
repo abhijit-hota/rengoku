@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"q"
 	"strconv"
 	"strings"
 	"sync"
@@ -409,7 +408,7 @@ func ImportBookmarks(ctx *gin.Context) {
 	asBytes, _ := io.ReadAll(file)
 	parsedLinks, _ := common.ParseNetscapeData(string(asBytes))
 
-	_, shouldFetchMetadata := ctx.GetQuery("fetchMeta")
+	_, shouldFetchMetadata := ctx.GetPostForm("fetchMeta")
 
 	type ExtBookmark struct {
 		DB.Bookmark
@@ -490,7 +489,6 @@ func ImportBookmarks(ctx *gin.Context) {
 
 			path += strconv.Itoa(folderID) + "/"
 		}
-		q.Q(linkID, folderID) // DEBUG
 		stmt = "INSERT OR IGNORE INTO links_folders (link_id, folder_id) VALUES (?, ?)"
 		tx.MustExec(stmt, linkID, folderID)
 	}

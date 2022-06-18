@@ -97,6 +97,11 @@
     }}
   >
     <input type="file" name="export" required />
+    <br>
+    <div class="m-b-1">
+      <input type="checkbox" name="fetchMeta" id="fetchMeta" />
+      <label for="fetchMeta">Fetch fresh metadata (slower)</label>
+    </div>
     <button class="w-full" type="submit">Import</button>
   </form>
 </div>
