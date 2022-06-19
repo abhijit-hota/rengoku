@@ -441,8 +441,8 @@ func ImportBookmarks(ctx *gin.Context) {
 				meta, err := common.GetMetadata(_bm.URL)
 				if err == nil {
 					_bm.Meta = *meta
-					_bm.Bookmark.NormalizeFavicon()
 				}
+				_bm.NormalizeFavicon()
 				bookmarks[index] = _bm
 			}(i, bm)
 		} else {
@@ -493,4 +493,5 @@ func ImportBookmarks(ctx *gin.Context) {
 		tx.MustExec(stmt, linkID, folderID)
 	}
 	utils.Must(tx.Commit())
+	ctx.JSON(http.StatusOK, bookmarks)
 }

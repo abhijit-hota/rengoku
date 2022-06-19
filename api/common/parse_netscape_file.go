@@ -90,6 +90,9 @@ func ParseNetscapeData(str string) ([]bookmark, error) {
 				aTag = entity[:lastA+4]
 			}
 			bm := getAnchorAttributes(aTag)
+			if strings.HasPrefix(bm.Href, "javascript:") {
+				continue
+			}
 			bm.FolderPath = strings.Join(path, FolderPathSeparator)
 			bookmarks = append(bookmarks, bm)
 		}

@@ -3,12 +3,14 @@ package common
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
+	"github.com/abhijit-hota/rengoku/server/utils"
 
 	"golang.org/x/net/html"
 )
@@ -74,6 +76,13 @@ func getHTMLUptoHead(link string) (result []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	contentType := resp.Header["Content-Type"]
+	if !strings.HasPrefix(resp.Status, "2") || len(contentType) == 0 {
+		return nil, errors.New("can't fetch")
+	}
+	if !strings.HasPrefix(contentType[0], "text/html") {
+		return nil, errors.New("not html")
+	}
 	defer resp.Body.Close()
 
 	streamedReader := bufio.NewReader(resp.Body)
@@ -98,9 +107,13 @@ func GetMetadata(link string) (*DB.Meta, error) {
 	if err != nil {
 		return nil, err
 	}
-	headNode, _ := html.Parse(bytes.NewReader(data))
+	if len(data) <= 0 {
+		return nil, errors.New("meta not found")
+	}
+	headNode := utils.MustGet(html.Parse(bytes.NewReader(data)))
 
 	hm := &DB.Meta{}
 	crawl(headNode, hm)
+
 	return hm, nil
 }

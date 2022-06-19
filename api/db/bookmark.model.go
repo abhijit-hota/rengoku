@@ -1,7 +1,6 @@
 package db
 
 import (
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -30,12 +29,8 @@ func (bm *Bookmark) NormalizeFavicon() {
 	favicon, err := url.Parse(bm.Meta.Favicon)
 	utils.Must(err)
 	if !favicon.IsAbs() {
-		rootURL, _ := url.Parse(bm.URL)
+		rootURL := utils.MustGet(url.Parse(bm.URL))
 		bm.Meta.Favicon = rootURL.Scheme + "://" + strings.TrimRight(rootURL.Hostname(), "/") + "/" + strings.TrimLeft(favicon.String(), "/")
-		res, _ := http.Get(bm.Meta.Favicon)
-		if res.StatusCode == http.StatusNotFound {
-			bm.Meta.Favicon = ""
-		}
 	}
 }
 
