@@ -145,14 +145,14 @@ func GetBookmarks(ctx *gin.Context) {
 	}
 
 	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, links.last_saved_offline,
-					   GROUP_CONCAT(IFNULL(tags.id,"") || "=" || IFNULL(tags.name,"")),
+					   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
 					   meta.title, meta.favicon, meta.description
 				FROM links 
 				LEFT JOIN meta ON meta.link_id = links.id 
-				LEFT JOIN links_tags ON links_tags.link_id = links.id 
-				LEFT JOIN tags ON tags.id = links_tags.tag_id
 				LEFT JOIN links_folders ON links_folders.link_id = links.id 
-				LEFT JOIN folders ON folders.id = links_folders.folder_id`
+				LEFT JOIN folders ON folders.id = links_folders.folder_id
+				LEFT JOIN links_tags ON links_tags.link_id = links.id 
+				LEFT JOIN tags ON tags.id = links_tags.tag_id`
 
 	prefix := "WHERE"
 	if queryParams.Search != "" {
@@ -178,7 +178,7 @@ func GetBookmarks(ctx *gin.Context) {
 		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
 	}
 	// Will optimize when an issue arises
-	// dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
+	dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
 	preparedQuery, err := db.Prepare(dbQuery)
 	utils.Must(err)
 
@@ -207,6 +207,10 @@ func GetBookmarks(ctx *gin.Context) {
 		} else {
 			keyVals := strings.Split(tagStr, ",")
 			for _, keyval := range keyVals {
+				if keyval == "" {
+					bm.Tags = make([]DB.Tag, 0)
+					break
+				}
 				str := strings.Split(keyval, "=")
 				tagId, _ := strconv.Atoi(str[0])
 
