@@ -12,19 +12,11 @@ import (
 	"github.com/abhijit-hota/rengoku/server/common"
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/gin-gonic/gin"
 )
-
-type BookmarkReq struct {
-	DB.Bookmark
-	TagIds    []int64 `json:"tags"`
-	FolderIds []int64 `json:"folders"`
-}
-type BookmarkRes struct {
-	DB.Bookmark
-	Tags []DB.Tag `json:"tags"`
-}
 
 func AddBookmark(ctx *gin.Context) {
 	db := DB.GetDB()
@@ -41,22 +33,20 @@ func AddBookmark(ctx *gin.Context) {
 		return
 	}
 
-	tx, err := db.Begin()
-	utils.Must(err)
+	tx := db.MustBegin()
 
-	now := time.Now().Unix()
-	body.Created = now
-	body.LastUpdated = now
+	stmt := "INSERT INTO links (url) VALUES (?) RETURNING *"
+	row := tx.QueryRowx(stmt, body.URL)
+	err = row.StructScan(&body.Bookmark)
 
-	stmt := "INSERT INTO links (url, created, last_updated) VALUES (?, ?, ?)"
-	linkInsertionInfo, err := tx.Exec(stmt, body.URL, now, now)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-		utils.Must(tx.Rollback())
-		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
-		return
+	if err != nil {
+		e, ok := err.(*sqlite.Error)
+		if ok && e.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE {
+			utils.Must(tx.Rollback())
+			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			return
+		}
 	}
-	linkID, _ := linkInsertionInfo.LastInsertId()
-	body.ID = linkID
 
 	meta := make(chan DB.Meta)
 	go func() {
@@ -74,7 +64,7 @@ func AddBookmark(ctx *gin.Context) {
 		}
 	}
 	if shouldSaveOffline {
-		go common.SavePage(body.URL, fmt.Sprint(linkID))
+		go common.SavePage(body.URL, strconv.Itoa(int(body.ID)))
 	}
 
 	var bm BookmarkRes
@@ -82,24 +72,24 @@ func AddBookmark(ctx *gin.Context) {
 	bm.Tags = []DB.Tag{}
 
 	for _, tagId := range body.TagIds {
-		_, err := tx.Exec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, linkID)
+		_, err := tx.Exec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, body.ID)
 		utils.Must(err)
 
 		row := tx.QueryRow("SELECT * FROM tags WHERE id = ?", tagId)
 		var tag DB.Tag
-		row.Scan(&tag.ID, &tag.Name, &tag.Created, &tag.LastUpdated)
+		row.Scan(&tag.ID, &tag.Name, &tag.CreatedAt, &tag.LastUpdated)
 		bm.Tags = append(bm.Tags, tag)
 	}
 
 	for _, folderId := range body.FolderIds {
-		_, err := tx.Exec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, linkID)
+		_, err := tx.Exec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, body.ID)
 		utils.Must(err)
 	}
 
 	stmt = "INSERT INTO meta (title, description, favicon, link_id) VALUES (?, ?, ?, ?)"
 	bm.Meta = <-meta
 	bm.NormalizeFavicon()
-	_, err = tx.Exec(stmt, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, linkID)
+	_, err = tx.Exec(stmt, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, body.ID)
 	utils.Must(err)
 
 	tx.Commit()
@@ -116,7 +106,7 @@ const (
 
 var sortColumnMap = map[string]string{
 	Title: "meta.title",
-	Date:  "links.created",
+	Date:  "links.created_at",
 }
 
 type Query struct {
@@ -144,7 +134,7 @@ func GetBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	dbQuery := `SELECT links.id, links.url, links.created, links.last_updated, links.last_saved_offline,
+	dbQuery := `SELECT links.id, links.url, links.created_at, links.last_updated, links.last_saved_offline,
 					   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
 					   meta.title, meta.favicon, meta.description
 				FROM links 
@@ -193,7 +183,7 @@ func GetBookmarks(ctx *gin.Context) {
 		err = rows.Scan(
 			&bm.ID,
 			&bm.URL,
-			&bm.Created,
+			&bm.CreatedAt,
 			&bm.LastUpdated,
 			&bm.LastSavedOffline,
 			&tagStr,
@@ -376,7 +366,7 @@ func RefetchMetadata(ctx *gin.Context) {
 
 	db := DB.GetDB()
 
-	var bm DB.Bookmark
+	var bm BookmarkRes
 	utils.Must(
 		db.Get(
 			&bm,
@@ -393,6 +383,7 @@ func RefetchMetadata(ctx *gin.Context) {
 	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
 	bm.NormalizeFavicon()
 
+	// Todo: needs a trigger
 	now := time.Now().Unix()
 
 	tx := db.MustBegin()
@@ -415,7 +406,7 @@ func ImportBookmarks(ctx *gin.Context) {
 	_, shouldFetchMetadata := ctx.GetPostForm("fetchMeta")
 
 	type ExtBookmark struct {
-		DB.Bookmark
+		BookmarkRes
 		Tags   []string
 		Folder string
 	}
@@ -423,17 +414,16 @@ func ImportBookmarks(ctx *gin.Context) {
 	var wg sync.WaitGroup
 
 	for i, v := range parsedLinks {
-		now := time.Now().Unix()
 		bm := ExtBookmark{
-			Bookmark: DB.Bookmark{
-				URL: v.Href,
+			BookmarkRes: BookmarkRes{
+				Bookmark: DB.Bookmark{
+					URL: v.Href,
+				},
 				Meta: DB.Meta{
 					Title:       v.Title,
 					Description: "",
 					Favicon:     v.IconUri,
 				},
-				Created:     now,
-				LastUpdated: now,
 			},
 			Tags:   v.Tags,
 			Folder: v.FolderPath,
@@ -458,9 +448,8 @@ func ImportBookmarks(ctx *gin.Context) {
 	db := DB.GetDB()
 	tx := db.MustBegin()
 	for _, bm := range bookmarks {
-		now := time.Now().Unix()
-		stmt := "INSERT OR IGNORE INTO links (url, created, last_updated) VALUES (?, ?, ?)"
-		tx.MustExec(stmt, bm.URL, now, now)
+		stmt := "INSERT OR IGNORE INTO links (url) VALUES (?)"
+		tx.MustExec(stmt, bm.URL)
 
 		stmt = "SELECT id FROM links WHERE url = ?"
 		var linkID int
@@ -469,9 +458,8 @@ func ImportBookmarks(ctx *gin.Context) {
 		stmt = "INSERT OR IGNORE INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
 		tx.MustExec(stmt, linkID, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon)
 		for _, tag := range bm.Tags {
-			now := time.Now().Unix()
-			stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
-			tx.MustExec(stmt, tag, now, now)
+			stmt := "INSERT OR IGNORE INTO tags (name) VALUES (?)"
+			tx.MustExec(stmt, tag)
 
 			stmt = "SELECT id FROM tags WHERE name = ?"
 			var tagId int
@@ -484,10 +472,9 @@ func ImportBookmarks(ctx *gin.Context) {
 		path := ""
 		var folderID int
 		for _, folder := range strings.Split(bm.Folder, common.FolderPathSeparator) {
-			now := time.Now().Unix()
 
-			stmt = "INSERT OR IGNORE INTO folders (name, path, created, last_updated) VALUES (?, ?, ?, ?)"
-			tx.MustExec(stmt, folder, path, now, now)
+			stmt = "INSERT OR IGNORE INTO folders (name, path) VALUES (?, ?)"
+			tx.MustExec(stmt, folder, path)
 
 			tx.Get(&folderID, "SELECT id FROM folders WHERE name = ? AND PATH = ?", folder, path)
 

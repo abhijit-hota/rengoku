@@ -89,7 +89,7 @@ func GetRootFolders(ctx *gin.Context) {
 			&folder.ID,
 			&folder.Name,
 			&folder.Path,
-			&folder.Created,
+			&folder.CreatedAt,
 			&folder.LastUpdated,
 		)
 		folders = append(folders, folder)
@@ -132,7 +132,7 @@ func CreateFolder(ctx *gin.Context) {
 		req.Path = ""
 	}
 
-	stmt := "INSERT INTO folders (name, path, created, last_updated) VALUES (?, ?, ?, ?)"
+	stmt := "INSERT INTO folders (name, path, created_at, last_updated) VALUES (?, ?, ?, ?)"
 	res, err := db.Exec(stmt, req.Name, req.Path, now, now)
 	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") || utils.MustGet(res.RowsAffected()) == 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
@@ -142,7 +142,7 @@ func CreateFolder(ctx *gin.Context) {
 	latestId := utils.MustGet(res.LastInsertId())
 	folder := DB.Folder{
 		ID:          latestId,
-		Created:     now,
+		CreatedAt:   now,
 		LastUpdated: now,
 		Name:        req.Name,
 		Path:        req.Path,
@@ -179,7 +179,7 @@ func UpdateFolderName(ctx *gin.Context) {
 
 	var folder DB.Folder
 	updatedTag := tx.QueryRow("SELECT * FROM folders WHERE id = ?", uri.ID)
-	updatedTag.Scan(&folder.ID, &folder.Name, &folder.Path, &folder.Created, &folder.LastUpdated)
+	updatedTag.Scan(&folder.ID, &folder.Name, &folder.Path, &folder.CreatedAt, &folder.LastUpdated)
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, folder)

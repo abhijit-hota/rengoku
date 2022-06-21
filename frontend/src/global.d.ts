@@ -6,13 +6,13 @@ type Bookmark = {
     description: string;
     favicon: string;
   };
-  created: number;
+  created_at: number;
   last_updated: number;
   last_saved_offline: number;
   tags: {
     id: number;
     name: string;
-    created: number;
+    created_at: number;
     last_updated: number;
   }[];
 };

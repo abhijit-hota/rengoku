@@ -49,16 +49,16 @@ func GetAllTags(ctx *gin.Context) {
 	for rows.Next() {
 		var id int64
 		var tag string
-		var created int64
+		var createdAt int64
 		var lastUpdated int64
 
 		rows.Scan(
 			&id,
 			&tag,
-			&created,
+			&createdAt,
 			&lastUpdated,
 		)
-		tags = append(tags, DB.Tag{ID: id, Name: tag, Created: created, LastUpdated: lastUpdated})
+		tags = append(tags, DB.Tag{ID: id, Name: tag, CreatedAt: createdAt, LastUpdated: lastUpdated})
 	}
 	if rows.Err() != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
@@ -76,7 +76,7 @@ func CreateTag(ctx *gin.Context) {
 
 	now := time.Now().Unix()
 
-	stmt := "INSERT INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
+	stmt := "INSERT INTO tags (name, created_at, last_updated) VALUES (?, ?, ?)"
 	res, err := db.Exec(stmt, req.Name, now, now)
 	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
@@ -84,7 +84,7 @@ func CreateTag(ctx *gin.Context) {
 	}
 	utils.Must(err)
 
-	tag := DB.Tag{Created: now, LastUpdated: now, Name: req.Name}
+	tag := DB.Tag{CreatedAt: now, LastUpdated: now, Name: req.Name}
 	tag.ID, _ = res.LastInsertId()
 
 	ctx.JSON(http.StatusOK, tag)
@@ -100,13 +100,13 @@ func CreateBulkTags(ctx *gin.Context) {
 
 	now := time.Now().Unix()
 
-	stmt := "INSERT OR IGNORE INTO tags (name, created, last_updated) VALUES (?, ?, ?)"
+	stmt := "INSERT OR IGNORE INTO tags (name, created_at, last_updated) VALUES (?, ?, ?)"
 
 	var tags []DB.Tag
 	for _, name := range req.Names {
 		res, _ := db.Exec(stmt, name, now, now)
 
-		tag := DB.Tag{Created: now, LastUpdated: now, Name: name}
+		tag := DB.Tag{CreatedAt: now, LastUpdated: now, Name: name}
 		tag.ID, _ = res.LastInsertId()
 		tags = append(tags, tag)
 	}
@@ -145,7 +145,7 @@ func UpdateTagName(ctx *gin.Context) {
 
 	var tag DB.Tag
 	updatedTag := tx.QueryRow("SELECT * FROM tags WHERE id = ?", uri.ID)
-	updatedTag.Scan(&tag.ID, &tag.Name, &tag.Created, &tag.LastUpdated)
+	updatedTag.Scan(&tag.ID, &tag.Name, &tag.CreatedAt, &tag.LastUpdated)
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, tag)

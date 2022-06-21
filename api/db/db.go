@@ -20,8 +20,8 @@ func InitializeDB() (db *sqlx.DB) {
 CREATE TABLE IF NOT EXISTS links (
 	id INTEGER NOT NULL PRIMARY KEY, 
 	url TEXT NOT NULL UNIQUE,
-	created INTEGER, 
-	last_updated INTEGER,
+	created_at INTEGER DEFAULT (unixepoch()), 
+	last_updated INTEGER DEFAULT (unixepoch()),
 	last_saved_offline INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS meta (
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS meta (
 CREATE TABLE IF NOT EXISTS tags (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL UNIQUE,
-	created INTEGER,
-	last_updated INTEGER
+	created_at INTEGER DEFAULT (unixepoch()),
+	last_updated INTEGER DEFAULT (unixepoch())
 );
 CREATE TABLE IF NOT EXISTS links_tags (
 	tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS folders (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
 	path TEXT,
-	created INTEGER,
-	last_updated INTEGER,
+	created_at INTEGER DEFAULT (unixepoch()),
+	last_updated INTEGER DEFAULT (unixepoch()),
 	UNIQUE(name, path)
 );
 CREATE INDEX IF NOT EXISTS folder_path ON folders(path);
