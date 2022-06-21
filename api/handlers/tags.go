@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
@@ -18,9 +17,6 @@ type IdUri struct {
 
 type NameRequest struct {
 	Name string `json:"name" form:"name" binding:"required"`
-}
-type BulkNameRequest struct {
-	Names []string `json:"names" binding:"required"`
 }
 
 func GetAllTags(ctx *gin.Context) {
@@ -74,40 +70,38 @@ func CreateTag(ctx *gin.Context) {
 		return
 	}
 
-	now := time.Now().Unix()
-
-	stmt := "INSERT INTO tags (name, created_at, last_updated) VALUES (?, ?, ?)"
-	res, err := db.Exec(stmt, req.Name, now, now)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
-		return
+	var tag DB.Tag
+	stmt := "INSERT INTO tags (name) VALUES (?) RETURNING *"
+	row := db.QueryRowx(stmt, req.Name)
+	err := row.StructScan(&tag)
+	if err != nil {
+		if DB.IsUniqueErr(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			return
+		}
+		panic(err)
 	}
-	utils.Must(err)
-
-	tag := DB.Tag{CreatedAt: now, LastUpdated: now, Name: req.Name}
-	tag.ID, _ = res.LastInsertId()
 
 	ctx.JSON(http.StatusOK, tag)
 }
 
 func CreateBulkTags(ctx *gin.Context) {
 	db := DB.GetDB()
-
-	var req BulkNameRequest
+	var req struct {
+		Names []string `json:"names" binding:"required"`
+	}
 	if err := ctx.BindJSON(&req); err != nil {
 		return
 	}
 
-	now := time.Now().Unix()
-
-	stmt := "INSERT OR IGNORE INTO tags (name, created_at, last_updated) VALUES (?, ?, ?)"
+	stmt := "INSERT OR IGNORE INTO tags (name) VALUES (?) RETURNING *"
 
 	var tags []DB.Tag
 	for _, name := range req.Names {
-		res, _ := db.Exec(stmt, name, now, now)
-
-		tag := DB.Tag{CreatedAt: now, LastUpdated: now, Name: name}
-		tag.ID, _ = res.LastInsertId()
+		var tag DB.Tag
+		row := db.QueryRowx(stmt, name)
+		row.StructScan(&tag)
+		// error not handled
 		tags = append(tags, tag)
 	}
 
@@ -134,11 +128,13 @@ func UpdateTagName(ctx *gin.Context) {
 	now := time.Now().Unix()
 
 	info, err := tx.Exec(statement, req.Name, now, uri.ID, req.Name)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
-		return
+	if err != nil {
+		if DB.IsUniqueErr(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			return
+		}
+		panic(err)
 	}
-	utils.Must(err)
 
 	numUpdated, _ := info.RowsAffected()
 	fmt.Println(numUpdated)

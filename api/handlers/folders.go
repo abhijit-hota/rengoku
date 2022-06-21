@@ -113,8 +113,6 @@ func CreateFolder(ctx *gin.Context) {
 		return
 	}
 
-	now := time.Now().Unix()
-
 	split := re.FindStringSubmatch(req.Path)
 	if len(split) > 0 {
 		parentPath, immediateParent := split[1], split[2]
@@ -132,21 +130,20 @@ func CreateFolder(ctx *gin.Context) {
 		req.Path = ""
 	}
 
-	stmt := "INSERT INTO folders (name, path, created_at, last_updated) VALUES (?, ?, ?, ?)"
-	res, err := db.Exec(stmt, req.Name, req.Path, now, now)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") || utils.MustGet(res.RowsAffected()) == 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
-		return
+	var folder DB.Folder
+
+	stmt := "INSERT INTO folders (name, path) VALUES (?, ?) RETURNING *"
+	row := db.QueryRowx(stmt, req.Name, req.Path)
+	err := row.StructScan(&folder)
+
+	if err != nil {
+		if DB.IsUniqueErr(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			return
+		}
+		panic(err)
 	}
-	utils.Must(err)
-	latestId := utils.MustGet(res.LastInsertId())
-	folder := DB.Folder{
-		ID:          latestId,
-		CreatedAt:   now,
-		LastUpdated: now,
-		Name:        req.Name,
-		Path:        req.Path,
-	}
+
 	ctx.JSON(http.StatusOK, folder)
 }
 
@@ -171,11 +168,13 @@ func UpdateFolderName(ctx *gin.Context) {
 	now := time.Now().Unix()
 
 	_, err = tx.Exec(statement, req.Name, now, uri.ID, req.Name)
-	if err != nil && strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-		ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
-		return
+	if err != nil {
+		if DB.IsUniqueErr(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			return
+		}
+		panic(err)
 	}
-	utils.Must(err)
 
 	var folder DB.Folder
 	updatedTag := tx.QueryRow("SELECT * FROM folders WHERE id = ?", uri.ID)

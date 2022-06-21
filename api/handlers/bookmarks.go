@@ -12,8 +12,6 @@ import (
 	"github.com/abhijit-hota/rengoku/server/common"
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
-	"modernc.org/sqlite"
-	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,12 +38,12 @@ func AddBookmark(ctx *gin.Context) {
 	err = row.StructScan(&body.Bookmark)
 
 	if err != nil {
-		e, ok := err.(*sqlite.Error)
-		if ok && e.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE {
+		if DB.IsUniqueErr(err) {
 			utils.Must(tx.Rollback())
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
 			return
 		}
+		panic(err)
 	}
 
 	meta := make(chan DB.Meta)

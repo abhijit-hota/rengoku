@@ -16,7 +16,7 @@ import (
 	from the amazing govalidator package with slight additions to it
 
 	Source: asaskevich/govalidator
-	https://github.com/asaskevich/govalidator/blob/master/validator.go#L104-L125
+    https://github.com/asaskevich/govalidator/blob/master/validator.go#L104-L125
 **/
 const (
 	maxURLRuneCount = 2083
