@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
@@ -100,8 +99,7 @@ func CreateBulkTags(ctx *gin.Context) {
 	for _, name := range req.Names {
 		var tag DB.Tag
 		row := db.QueryRowx(stmt, name)
-		row.StructScan(&tag)
-		// error not handled
+		utils.Must(row.StructScan(&tag))
 		tags = append(tags, tag)
 	}
 
@@ -124,10 +122,9 @@ func UpdateTagName(ctx *gin.Context) {
 	tx, err := db.Begin()
 	utils.Must(err)
 
-	statement := "UPDATE tags SET name = ?, last_updated = ? WHERE id = ? AND name != ?"
-	now := time.Now().Unix()
+	statement := "UPDATE tags SET name = ? WHERE id = ? AND name != ?"
 
-	info, err := tx.Exec(statement, req.Name, now, uri.ID, req.Name)
+	info, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})

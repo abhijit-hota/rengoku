@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
@@ -164,10 +163,9 @@ func UpdateFolderName(ctx *gin.Context) {
 	tx, err := db.Begin()
 	utils.Must(err)
 
-	statement := "UPDATE folders SET name = ?, last_updated = ? WHERE id = ? AND name != ?"
-	now := time.Now().Unix()
+	statement := "UPDATE folders SET name = ? WHERE id = ? AND name != ?"
 
-	_, err = tx.Exec(statement, req.Name, now, uri.ID, req.Name)
+	_, err = tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})

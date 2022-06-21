@@ -57,16 +57,14 @@
     <div class="col m-b-1">
       <label for="tags"><strong>Tags</strong></label>
       {#await api("/tags") then tags}
-        {#if tags.length > 0}
-          <MultiSelect
-            inputClass="input-like"
-            outerDivClass="color-fix"
-            allowUserOptions
-            addOptionMsg="+ Create new tag"
-            options={tags.map(({ id, name }) => ({ label: name, value: id }))}
-            bind:selected={selectedTags}
-          />
-        {/if}
+        <MultiSelect
+          inputClass="input-like"
+          outerDivClass="color-fix"
+          allowUserOptions
+          addOptionMsg="+ Create new tag"
+          options={tags.map(({ id, name }) => ({ label: name, value: id }))}
+          bind:selected={selectedTags}
+        />
       {/await}
     </div>
 
@@ -74,12 +72,12 @@
       <label for="folders"><strong>Folder</strong></label>
       {#await api("/folders") then folders}
         <!-- {#if folders.length > 0} -->
-          <MultiSelect
-            inputClass="input-like"
-            outerDivClass="color-fix"
-            options={folders.map(({ id, name }) => ({ label: name, value: id }))}
-            bind:selected={selectedFolders}
-          />
+        <MultiSelect
+          inputClass="input-like"
+          outerDivClass="color-fix"
+          options={folders.map(({ id, name }) => ({ label: name, value: id }))}
+          bind:selected={selectedFolders}
+        />
         <!-- {/if} -->
       {/await}
     </div>

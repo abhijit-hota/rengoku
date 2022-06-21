@@ -350,8 +350,7 @@ func SaveBookmark(ctx *gin.Context) {
 
 	common.SavePage(bm.URL, fmt.Sprint(uri.ID))
 
-	now := time.Now().Unix()
-	db.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", now, uri.ID)
+	db.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", time.Now().Unix(), uri.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{"saved": true})
 }
@@ -366,30 +365,17 @@ func RefetchMetadata(ctx *gin.Context) {
 
 	var bm BookmarkRes
 	utils.Must(
-		db.Get(
-			&bm,
-			`SELECT links.*, 
-			meta.title "meta.title", 
-			meta.favicon "meta.favicon", 
-			meta.description "meta.description"
-			FROM links LEFT JOIN meta ON meta.link_id = links.id
-			WHERE links.id = ?`,
-			uri.ID,
-		),
+		db.Get(&bm.URL, `SELECT url from links WHERE links.id = ?`, uri.ID),
 	)
 
 	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
 	bm.NormalizeFavicon()
 
-	// Todo: needs a trigger
-	now := time.Now().Unix()
-
 	tx := db.MustBegin()
 	tx.MustExec(
 		"UPDATE meta SET title = ?, description = ?, favicon = ? WHERE link_id = ?",
-		bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, bm.ID,
+		bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, uri.ID,
 	)
-	tx.MustExec("UPDATE links SET last_updated = ? WHERE id = ?", now, bm.ID)
 	utils.Must(tx.Commit())
 
 	ctx.JSON(http.StatusOK, bm.Meta)

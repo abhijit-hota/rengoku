@@ -17,14 +17,14 @@ type Bookmark struct {
 type Tag struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name" form:"name" binding:"required"`
-	CreatedAt   int64  `json:"created_at,omitempty" form:"created_at"`
-	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated"`
+	CreatedAt   int64  `json:"created_at,omitempty" form:"created_at" db:"created_at"`
+	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated" db:"last_updated"`
 }
 
 type Folder struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name" form:"name" binding:"required"`
 	Path        string `json:"path" form:"path"`
-	CreatedAt   int64  `json:"created_at,omitempty" form:"created_at"`
-	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated"`
+	CreatedAt   int64  `json:"created_at,omitempty" form:"created_at" db:"created_at"`
+	LastUpdated int64  `json:"last_updated,omitempty" form:"last_updated" db:"last_updated"`
 }
