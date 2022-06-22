@@ -12,6 +12,7 @@ import (
 	"github.com/abhijit-hota/rengoku/server/common"
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
 )
@@ -144,15 +145,15 @@ func GetBookmarks(ctx *gin.Context) {
 
 	prefix := "WHERE"
 	if queryParams.Search != "" {
-		dbQuery += fmt.Sprintf("\nWHERE meta.title LIKE '%%%[1]v%%' OR links.url LIKE '%%%[1]v%%' OR tags.name LIKE '%%%[1]v%%'", queryParams.Search)
+		dbQuery += "\nWHERE meta.title LIKE :query OR links.url LIKE :query OR tags.name LIKE :query"
 		prefix = "AND"
 	}
 	if len(queryParams.Tags) > 0 {
-		dbQuery += fmt.Sprintf("\n%s tags.id IN (%s)", prefix, utils.GetMultiParam(len(queryParams.Tags)))
+		dbQuery += "\n" + prefix + " tags.id IN (:tagIDs)"
 		prefix = "AND"
 	}
 	if queryParams.Folder > 0 {
-		dbQuery += fmt.Sprintf("\n%s folders.id = (%v)", prefix, queryParams.Folder)
+		dbQuery += "\n" + prefix + " folders.id = (:folderID)"
 	}
 	dbQuery += "\nGROUP BY links.id"
 
@@ -163,14 +164,22 @@ func GetBookmarks(ctx *gin.Context) {
 			order = Desc
 		}
 		order = strings.ToUpper(order)
-		dbQuery += fmt.Sprintf("\nORDER BY %s %s", sortByColumn, order)
+		dbQuery += "\nORDER BY" + " " + sortByColumn + " " + order
 	}
 	// Will optimize when an issue arises
 	dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
-	preparedQuery, err := db.Prepare(dbQuery)
+
+	arg := map[string]interface{}{
+		"query":    "%" + queryParams.Search + "%",
+		"tagIDs":   queryParams.Tags,
+		"folderID": queryParams.Folder,
+	}
+	query, args, err := sqlx.Named(dbQuery, arg)
+	query, args, err = sqlx.In(query, args...)
+
 	utils.Must(err)
 
-	rows, err := preparedQuery.Query(utils.ToGenericArray(queryParams.Tags)...)
+	rows, err := db.Queryx(query, args...)
 	utils.Must(err)
 	defer rows.Close()
 
@@ -228,14 +237,19 @@ func DeleteBookmarkProperty(ctx *gin.Context) {
 		return
 	}
 
-	if uri.Property != "tag" && uri.Property != "folder" {
+	stmt := ""
+	switch uri.Property {
+	case "tag":
+		stmt = "DELETE FROM links_tags WHERE link_id = ? AND tag_id = ?"
+	case "folder":
+		stmt = "DELETE FROM links_folders WHERE link_id = ? AND folder_id = ?"
+	default:
 		ctx.AbortWithStatus(400)
 		return
 	}
 
-	stmt := fmt.Sprintf("DELETE FROM links_%[1]vs WHERE link_id = ? AND %[1]v_id = ?", uri.Property)
-	info, _ := db.Exec(stmt, uri.ID, uri.PropertyId)
-	numDeleted, _ := info.RowsAffected()
+	info := db.MustExec(stmt, uri.ID, uri.PropertyId)
+	numDeleted := utils.MustGet(info.RowsAffected())
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
@@ -257,12 +271,18 @@ func AddBookmarkProperty(ctx *gin.Context) {
 	if err := ctx.Bind(&newProperty); err != nil {
 		return
 	}
-	if uri.Property != "tag" && uri.Property != "folder" {
+
+	stmt := ""
+	switch uri.Property {
+	case "tag":
+		stmt = "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
+	case "folder":
+		stmt = "INSERT OR IGNORE INTO links_folders (folder_id, link_id) VALUES (?, ?)"
+	default:
 		ctx.AbortWithStatus(400)
 		return
 	}
 
-	stmt := fmt.Sprintf("INSERT OR IGNORE INTO links_%[1]vs (%[1]v_id, link_id) VALUES (?, ?)", uri.Property)
 	info, err := db.Exec(stmt, newProperty.Id, uri.ID)
 	utils.Must(err)
 	updatedLinks, _ := info.RowsAffected()
