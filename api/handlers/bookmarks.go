@@ -35,8 +35,7 @@ func AddBookmark(ctx *gin.Context) {
 	tx := db.MustBegin()
 
 	stmt := "INSERT INTO links (url) VALUES (?) RETURNING *"
-	row := tx.QueryRowx(stmt, body.URL)
-	err = row.StructScan(&body.Bookmark)
+	err = tx.Get(&body.Bookmark, stmt, body.URL)
 
 	if err != nil {
 		if DB.IsUniqueErr(err) {
@@ -52,9 +51,10 @@ func AddBookmark(ctx *gin.Context) {
 		meta <- *utils.MustGet(common.GetMetadata(body.URL))
 	}()
 
-	urlActions := utils.GetConfig().URLActions
+	config := utils.GetConfig()
 
-	shouldSaveOffline := utils.GetConfig().ShouldSaveOffline
+	urlActions := config.URLActions
+	shouldSaveOffline := config.ShouldSaveOffline
 	for _, urlAction := range urlActions {
 		if urlAction.Match(body.URL) {
 			body.TagIds = append(body.TagIds, urlAction.Tags...)
@@ -63,7 +63,8 @@ func AddBookmark(ctx *gin.Context) {
 		}
 	}
 	if shouldSaveOffline {
-		go common.SavePage(body.URL, strconv.Itoa(int(body.ID)))
+		filename := strconv.Itoa(int(body.ID))
+		go common.SavePage(body.URL, filename)
 	}
 
 	var bm BookmarkRes
@@ -71,24 +72,24 @@ func AddBookmark(ctx *gin.Context) {
 	bm.Tags = []DB.Tag{}
 
 	for _, tagId := range body.TagIds {
-		_, err := tx.Exec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, body.ID)
+		tx.MustExec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, body.ID)
+
+		var tag DB.Tag
+		err = tx.Get(&tag, "SELECT * FROM tags WHERE id = ?", tagId)
 		utils.Must(err)
 
-		row := tx.QueryRow("SELECT * FROM tags WHERE id = ?", tagId)
-		var tag DB.Tag
-		row.Scan(&tag.ID, &tag.Name, &tag.CreatedAt, &tag.LastUpdated)
 		bm.Tags = append(bm.Tags, tag)
 	}
 
 	for _, folderId := range body.FolderIds {
-		_, err := tx.Exec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, body.ID)
-		utils.Must(err)
+		tx.MustExec("INSERT INTO links_folders (folder_id, link_id) VALUES (?, ?)", folderId, body.ID)
 	}
 
-	stmt = "INSERT INTO meta (title, description, favicon, link_id) VALUES (?, ?, ?, ?)"
+	stmt = "INSERT INTO meta (title, description, favicon, link_id) VALUES (:title, :description, :favicon, :link_id)"
 	bm.Meta = <-meta
-	bm.NormalizeFavicon()
-	_, err = tx.Exec(stmt, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, body.ID)
+	bm.FixFavicon()
+	bm.Meta.LinkID = body.ID
+	_, err = tx.NamedExec(stmt, bm.Meta)
 	utils.Must(err)
 
 	tx.Commit()
@@ -96,16 +97,15 @@ func AddBookmark(ctx *gin.Context) {
 }
 
 const (
-	Title = "title"
-	Date  = "date"
-	Asc   = "asc"
-	Desc  = "desc"
-	Tags  = "tags"
+	title = "title"
+	date  = "date"
+	asc   = "asc"
+	desc  = "desc"
 )
 
 var sortColumnMap = map[string]string{
-	Title: "meta.title",
-	Date:  "links.created_at",
+	title: "meta.title",
+	date:  "links.created_at",
 }
 
 type Query struct {
@@ -133,15 +133,17 @@ func GetBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	dbQuery := `SELECT links.id, links.url, links.created_at, links.last_updated, links.last_saved_offline,
-					   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
-					   meta.title, meta.favicon, meta.description
-				FROM links 
-				LEFT JOIN meta ON meta.link_id = links.id 
-				LEFT JOIN links_folders ON links_folders.link_id = links.id 
-				LEFT JOIN folders ON folders.id = links_folders.folder_id
-				LEFT JOIN links_tags ON links_tags.link_id = links.id 
-				LEFT JOIN tags ON tags.id = links_tags.tag_id`
+	dbQuery := `
+SELECT links.id, links.url, links.created_at, links.last_updated, links.last_saved_offline,
+	   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
+	   meta.title, meta.favicon, meta.description
+FROM links 
+LEFT JOIN meta ON meta.link_id = links.id 
+LEFT JOIN links_folders ON links_folders.link_id = links.id 
+LEFT JOIN folders ON folders.id = links_folders.folder_id
+LEFT JOIN links_tags ON links_tags.link_id = links.id 
+LEFT JOIN tags ON tags.id = links_tags.tag_id
+`
 
 	prefix := "WHERE"
 	if queryParams.Search != "" {
@@ -159,9 +161,9 @@ func GetBookmarks(ctx *gin.Context) {
 
 	sortByColumn := sortColumnMap[queryParams.SortBy]
 	if sortByColumn != "" {
-		order := Asc
-		if queryParams.Order == Desc {
-			order = Desc
+		order := asc
+		if queryParams.Order == desc {
+			order = desc
 		}
 		order = strings.ToUpper(order)
 		dbQuery += "\nORDER BY" + " " + sortByColumn + " " + order
@@ -188,7 +190,7 @@ func GetBookmarks(ctx *gin.Context) {
 		var bm BookmarkRes
 		var tagStr string
 		err = rows.Scan(
-			&bm.ID,
+			&bm.Bookmark.ID,
 			&bm.URL,
 			&bm.CreatedAt,
 			&bm.LastUpdated,
@@ -199,28 +201,22 @@ func GetBookmarks(ctx *gin.Context) {
 			&bm.Meta.Description,
 		)
 		utils.Must(err)
-		if tagStr == "=" {
+		if tagStr == "" {
 			bm.Tags = []DB.Tag{}
 		} else {
 			keyVals := strings.Split(tagStr, ",")
 			for _, keyval := range keyVals {
-				if keyval == "" {
-					bm.Tags = make([]DB.Tag, 0)
-					break
-				}
 				str := strings.Split(keyval, "=")
-				tagId, _ := strconv.Atoi(str[0])
-
-				var tag DB.Tag
-				tag.ID = int64(tagId)
-				tag.Name = str[1]
+				tag := DB.Tag{
+					ID:   int64(utils.MustGet(strconv.Atoi(str[0]))),
+					Name: str[1],
+				}
 				bm.Tags = append(bm.Tags, tag)
 			}
 		}
 		bookmarks = append(bookmarks, bm)
 	}
-	err = rows.Err()
-	utils.Must(err)
+	utils.Must(rows.Err())
 
 	ctx.JSON(http.StatusOK, gin.H{"data": bookmarks, "page": queryParams.Page})
 }
@@ -283,9 +279,8 @@ func AddBookmarkProperty(ctx *gin.Context) {
 		return
 	}
 
-	info, err := db.Exec(stmt, newProperty.Id, uri.ID)
-	utils.Must(err)
-	updatedLinks, _ := info.RowsAffected()
+	info := db.MustExec(stmt, newProperty.Id, uri.ID)
+	updatedLinks := utils.MustGet(info.RowsAffected())
 
 	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks == 1})
 }
@@ -298,9 +293,8 @@ func DeleteBookmark(ctx *gin.Context) {
 		return
 	}
 
-	info, err := db.Exec("DELETE FROM links WHERE id = ?", uri.ID)
-	utils.Must(err)
-	numDeleted, _ := info.RowsAffected()
+	info := db.MustExec("DELETE FROM links WHERE id = ?", uri.ID)
+	numDeleted := utils.MustGet(info.RowsAffected())
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
 }
@@ -315,11 +309,11 @@ func BulkDeleteBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	placeholder := utils.GetMultiParam(len(body.Ids))
+	query, args, err := sqlx.In("DELETE FROM links WHERE id IN (?)", body.Ids)
+	utils.Must(err)
 
-	stmt := "DELETE FROM links WHERE id IN (" + placeholder + ")"
-	info, _ := db.Exec(stmt, utils.ToGenericArray(body.Ids)...)
-	numDeleted, _ := info.RowsAffected()
+	info := db.MustExec(query, args...)
+	numDeleted := utils.MustGet(info.RowsAffected())
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
 }
@@ -335,24 +329,22 @@ func BulkAddBookmarkTags(ctx *gin.Context) {
 		return
 	}
 
-	numTotalPairs := len(body.LinkIds) * len(body.TagIds)
-	fmt.Println("calc len:", numTotalPairs)
+	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES (:tag_id, :link_id)"
 
-	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES " + utils.RepeatWithSeparator("(?, ?),", numTotalPairs, ",")
-	stmt, err := db.Prepare(str)
-	utils.Must(err)
-
-	allPairs := []int{}
+	allPairs := []map[string]int{}
 
 	for _, linkId := range body.LinkIds {
 		for _, tagId := range body.TagIds {
-			allPairs = append(allPairs, tagId, linkId)
+			allPairs = append(allPairs, map[string]int{
+				"tag_id":  tagId,
+				"link_id": linkId,
+			})
 		}
 	}
 
-	info, err := stmt.Exec(utils.ToGenericArray(allPairs)...)
+	info, err := db.NamedExec(str, allPairs)
 	utils.Must(err)
-	updatedLinks, _ := info.RowsAffected()
+	updatedLinks := utils.MustGet(info.RowsAffected())
 
 	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks})
 }
@@ -364,14 +356,16 @@ func SaveBookmark(ctx *gin.Context) {
 	}
 
 	db := DB.GetDB()
+	tx := db.MustBegin()
 
 	var bm DB.Bookmark
-	utils.Must(db.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
+	utils.Must(tx.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
 
 	common.SavePage(bm.URL, fmt.Sprint(uri.ID))
 
-	db.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", time.Now().Unix(), uri.ID)
+	tx.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", time.Now().Unix(), uri.ID)
 
+	utils.Must(tx.Commit())
 	ctx.JSON(http.StatusOK, gin.H{"saved": true})
 }
 
@@ -382,19 +376,20 @@ func RefetchMetadata(ctx *gin.Context) {
 	}
 
 	db := DB.GetDB()
+	tx := db.MustBegin()
 
 	var bm BookmarkRes
 	utils.Must(
-		db.Get(&bm.URL, `SELECT url from links WHERE links.id = ?`, uri.ID),
+		tx.Get(&bm.URL, `SELECT url from links WHERE links.id = ?`, uri.ID),
 	)
 
 	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
-	bm.NormalizeFavicon()
+	bm.Meta.LinkID = uri.ID
+	bm.FixFavicon()
 
-	tx := db.MustBegin()
 	tx.MustExec(
-		"UPDATE meta SET title = ?, description = ?, favicon = ? WHERE link_id = ?",
-		bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon, uri.ID,
+		"UPDATE meta SET title = :title, description = :description, favicon = :favicon WHERE link_id = :link_id",
+		bm.Meta,
 	)
 	utils.Must(tx.Commit())
 
@@ -440,7 +435,7 @@ func ImportBookmarks(ctx *gin.Context) {
 				if err == nil {
 					_bm.Meta = *meta
 				}
-				_bm.NormalizeFavicon()
+				_bm.FixFavicon()
 				bookmarks[index] = _bm
 			}(i, bm)
 		} else {

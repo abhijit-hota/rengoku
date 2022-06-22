@@ -19,7 +19,7 @@ type BookmarkRes struct {
 	Tags    []DB.Tag `json:"tags"`
 }
 
-func (bm *BookmarkRes) NormalizeFavicon() {
+func (bm *BookmarkRes) FixFavicon() {
 	if bm.Meta.Favicon == "" {
 		bm.Meta.Favicon = "favicon.ico"
 	}

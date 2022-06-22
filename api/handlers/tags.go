@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
@@ -31,29 +30,17 @@ func GetAllTags(ctx *gin.Context) {
 
 	dbQuery := "SELECT * FROM tags"
 	if query.Str != "" {
-		dbQuery += " WHERE name LIKE '%" + query.Str + "%'"
+		dbQuery += " WHERE name LIKE ?"
 	}
-	preparedStmt, err := db.Prepare(dbQuery)
-	utils.Must(err)
-
-	rows, err := preparedStmt.Query()
+	rows, err := db.Queryx(dbQuery, "%"+query.Str+"%")
 	defer rows.Close()
 	utils.Must(err)
 
 	tags := make([]DB.Tag, 0)
 	for rows.Next() {
-		var id int64
-		var tag string
-		var createdAt int64
-		var lastUpdated int64
-
-		rows.Scan(
-			&id,
-			&tag,
-			&createdAt,
-			&lastUpdated,
-		)
-		tags = append(tags, DB.Tag{ID: id, Name: tag, CreatedAt: createdAt, LastUpdated: lastUpdated})
+		tag := DB.Tag{}
+		rows.StructScan(&tag)
+		tags = append(tags, tag)
 	}
 	if rows.Err() != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "INTERNAL_ERROR"})
@@ -119,12 +106,11 @@ func UpdateTagName(ctx *gin.Context) {
 		return
 	}
 
-	tx, err := db.Begin()
-	utils.Must(err)
+	tx := db.MustBegin()
 
 	statement := "UPDATE tags SET name = ? WHERE id = ? AND name != ?"
 
-	info, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
+	_, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
@@ -133,12 +119,9 @@ func UpdateTagName(ctx *gin.Context) {
 		panic(err)
 	}
 
-	numUpdated, _ := info.RowsAffected()
-	fmt.Println(numUpdated)
-
 	var tag DB.Tag
-	updatedTag := tx.QueryRow("SELECT * FROM tags WHERE id = ?", uri.ID)
-	updatedTag.Scan(&tag.ID, &tag.Name, &tag.CreatedAt, &tag.LastUpdated)
+	row := tx.QueryRowx("SELECT * FROM tags WHERE id = ?", uri.ID)
+	utils.Must(row.StructScan(&tag))
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, tag)
@@ -153,8 +136,7 @@ func DeleteTag(ctx *gin.Context) {
 	}
 
 	statement := "DELETE FROM tags WHERE id = ?"
-	info, err := db.Exec(statement, uri.ID)
-	utils.Must(err)
+	info := db.MustExec(statement, uri.ID)
 	numDeleted, _ := info.RowsAffected()
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})

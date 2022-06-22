@@ -71,26 +71,17 @@ func GetRootFolders(ctx *gin.Context) {
 
 	dbQuery := "SELECT * FROM folders"
 	if query.Str != "" {
-		dbQuery += " WHERE name LIKE '%" + query.Str + "%'"
+		dbQuery += " WHERE name LIKE ?"
 	}
-	preparedStmt, err := db.Prepare(dbQuery)
-	utils.Must(err)
 
-	rows, err := preparedStmt.Query()
+	rows, err := db.Queryx(dbQuery, "%"+query.Str+"%")
 	defer rows.Close()
 	utils.Must(err)
 
 	folders := make([]DB.Folder, 0)
 	for rows.Next() {
 		var folder DB.Folder
-
-		rows.Scan(
-			&folder.ID,
-			&folder.Name,
-			&folder.Path,
-			&folder.CreatedAt,
-			&folder.LastUpdated,
-		)
+		rows.StructScan(&folder)
 		folders = append(folders, folder)
 	}
 	if rows.Err() != nil {
@@ -116,12 +107,11 @@ func CreateFolder(ctx *gin.Context) {
 	if len(split) > 0 {
 		parentPath, immediateParent := split[1], split[2]
 
-		query := "SELECT COUNT(*) FROM folders WHERE id = ? AND path = ?"
-		result := db.QueryRow(query, immediateParent, parentPath)
+		query := "SELECT COUNT(1) FROM folders WHERE id = ? AND path = ?"
 		var numId int
-		result.Scan(&numId)
+		err := db.Get(&numId, query, immediateParent, parentPath)
 
-		if numId != 1 {
+		if numId != 1 || err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "INVALID_FOLDER_PATH"})
 			return
 		}
@@ -160,12 +150,11 @@ func UpdateFolderName(ctx *gin.Context) {
 		return
 	}
 
-	tx, err := db.Begin()
-	utils.Must(err)
+	tx := db.MustBegin()
 
 	statement := "UPDATE folders SET name = ? WHERE id = ? AND name != ?"
 
-	_, err = tx.Exec(statement, req.Name, uri.ID, req.Name)
+	_, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
@@ -175,8 +164,8 @@ func UpdateFolderName(ctx *gin.Context) {
 	}
 
 	var folder DB.Folder
-	updatedTag := tx.QueryRow("SELECT * FROM folders WHERE id = ?", uri.ID)
-	updatedTag.Scan(&folder.ID, &folder.Name, &folder.Path, &folder.CreatedAt, &folder.LastUpdated)
+	query := "SELECT * FROM folders WHERE id = ?"
+	tx.Get(&folder, query, uri.ID)
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, folder)
@@ -191,8 +180,7 @@ func DeleteFolder(ctx *gin.Context) {
 	}
 
 	statement := "DELETE FROM folders WHERE id = ?"
-	info, err := db.Exec(statement, uri.ID)
-	utils.Must(err)
+	info := db.MustExec(statement, uri.ID)
 	numDeleted, _ := info.RowsAffected()
 
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})

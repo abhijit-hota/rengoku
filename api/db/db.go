@@ -3,7 +3,6 @@ package db
 import (
 	"os"
 
-	"github.com/abhijit-hota/rengoku/server/utils"
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
@@ -11,12 +10,10 @@ import (
 var db *sqlx.DB
 
 func InitializeDB() (db *sqlx.DB) {
-	var err error
 	dsn := "file:" + os.Getenv("DB_PATH") + "?_pragma=foreign_keys(1)"
-	db, err = sqlx.Open("sqlite", dsn)
-	utils.Must(err)
+	db = sqlx.MustOpen("sqlite", dsn)
 
-	t := `--sql
+	schema := `--sql
 CREATE TABLE IF NOT EXISTS links (
 	id INTEGER NOT NULL PRIMARY KEY, 
 	url TEXT NOT NULL UNIQUE,
@@ -85,9 +82,7 @@ CREATE TRIGGER IF NOT EXISTS on_folder_remove DELETE ON links_folders
 		UPDATE links SET last_updated = (unixepoch()) WHERE id = OLD.link_id;
 	END;
 `
-
-	_, err = db.Exec(t)
-	utils.Must(err)
+	db.MustExec(schema)
 	return db
 }
 
