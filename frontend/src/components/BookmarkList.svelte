@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
 
   import { bookmarks, queryParams, queryStr } from "../lib/stores";
@@ -26,7 +26,18 @@
 </script>
 
 <div class="sticky">
-  <h2 style="padding-left: 0.5rem;">Showing 20 of 201</h2>
+  <div class="row">
+    <h2 style="padding-left: 0.5rem;">Showing 20 of 201</h2>
+    <button
+      class="m-l-auto"
+      on:click={() => {
+        // @ts-ignore
+        document.getElementById("add-bookmark-modal").showModal();
+      }}
+    >
+      + Add Bookmark
+    </button>
+  </div>
   <hr />
 </div>
 {#each $bookmarks as bookmark}

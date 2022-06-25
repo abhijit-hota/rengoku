@@ -1,16 +1,10 @@
-<script>
+<script lang="ts">
   import { api } from "../lib";
 
   import { queryParams } from "../lib/stores";
-  import { onMount } from "svelte";
-  let tags = [];
-  onMount(async () => {
-    try {
-      tags = await api("/tags");
-    } catch (error) {
-      console.debug(error);
-    }
-  });
+  import MultiSelect from "svelte-multiselect";
+  let selectedTags = [];
+  $: $queryParams.tags = selectedTags.map(({ value }) => value);
 </script>
 
 <input
@@ -18,7 +12,8 @@
   id="search"
   name="search"
   placeholder="Search"
-  class="m-b-2"
+  class="m-b-2 w-full"
+  style="box-sizing: border-box;"
   bind:value={$queryParams.search}
 />
 <div class="row m-b-2">
@@ -46,78 +41,34 @@
   </div>
 </div>
 
-<div class="row">
+<div class="row m-b-1">
   <strong>FILTER BY TAGS</strong>
   <button
     class="m-l-auto"
+    style="margin-right: 0;"
     disabled={$queryParams.tags.length === 0}
     on:click={() => {
+      selectedTags = [];
       $queryParams.tags = [];
     }}
   >
     Clear
   </button>
 </div>
-<div class="tags m-b-2">
-  {#each tags as tag}
-    <div
-      class="tag"
-      role="checkbox"
-      style={`opacity: ${$queryParams.tags.includes(tag.id) ? 1 : 0.5}`}
-      on:click={() => {
-        const queryTags = $queryParams.tags;
-        if (queryTags.includes(tag.id)) {
-          const toDelete = queryTags.indexOf(tag);
-          queryTags.splice(toDelete, 1);
-        } else {
-          queryTags.push(tag.id);
-        }
-        $queryParams.tags = queryTags;
-      }}
-    >
-      {tag.name}
-    </div>
-  {/each}
-</div>
-
-<div>
-  <button
-    class="w-full m-b-2"
-    on:click={() => {
-      // @ts-ignore
-      document.getElementById("settings").showModal();
-    }}>Open Settings</button
-  >
-  <form
-    on:submit|preventDefault={(e) => {
-      const formElem = e.target;
-      // @ts-ignore
-      api("/bookmarks/import", "POST", new FormData(formElem));
-      // console.debug(data);
-    }}
-  >
-    <input type="file" name="export" required />
-    <br>
-    <div class="m-b-1">
-      <input type="checkbox" name="fetchMeta" id="fetchMeta" />
-      <label for="fetchMeta">Fetch fresh metadata (slower)</label>
-    </div>
-    <button class="w-full" type="submit">Import</button>
-  </form>
-</div>
+{#await api("/tags") then tags}
+  <MultiSelect
+    inputClass="input-like"
+    placeholder="Search tags"
+    removeAllTitle="Clear all tags"
+    outerDivClass="color-fix filter-tags"
+    options={tags.map(({ id, name }) => ({ label: name, value: id }))}
+    bind:selected={selectedTags}
+  />
+{/await}
 
 <style>
   input[type="radio"],
   label {
     cursor: pointer;
-  }
-  .tags .tag {
-    cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 100ms ease-out;
-  }
-
-  .tags .tag:hover {
-    opacity: 1 !important;
   }
 </style>

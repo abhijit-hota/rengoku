@@ -61,7 +61,6 @@ dialog {
     margin-bottom: 2em;
 }
 
-
 .red {
     color: rgb(231, 126, 126);
 }
@@ -128,4 +127,8 @@ dialog {
     margin-left: 0px;
     padding: 4px 8px;
     width: max-content;
+}
+
+.filter-tags .remove-all {
+    display: none !important;
 }

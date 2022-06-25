@@ -1,13 +1,11 @@
-<script>
+<script lang="ts">
   import { bookmarks } from "../lib/stores";
   import { api } from "../lib";
   import ellipsisIcon from "../assets/ellipsis.png";
   import OutClick from "./OutClick.svelte";
-  import { identity } from "svelte/internal";
 
-  /**@type {Bookmark}*/
-  export let bookmark;
-  export let toggleMark;
+  export let bookmark: Bookmark;
+  export let toggleMark: Function;
 
   let hovered = false;
   let checked = false;

@@ -1,9 +1,15 @@
-<script>
+<script lang="ts">
+  import { getContext } from "svelte";
+  const { open } = getContext("simple-modal");
+  const showSurprise = () => open(1, { message: "It's a modal!" });
+
   import MultiSelect from "svelte-multiselect";
   import { bookmarks } from "../lib/stores";
   import { api } from "../lib";
 
-  let status, message, url;
+  let status: string;
+  let message: string;
+  let url: string;
   let selectedTags = [];
   let selectedFolders = [];
 

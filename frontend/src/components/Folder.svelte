@@ -5,7 +5,7 @@
   };
 </script>
 
-<script>
+<script lang="ts">
   import { queryParams } from "../lib/stores";
 
   //	import { slide } from 'svelte/transition'

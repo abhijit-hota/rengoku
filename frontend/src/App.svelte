@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import "./styles/water.min.css";
   import "./styles/style.css";
   import { api } from "./lib";
@@ -13,11 +13,9 @@
       class="m-l-auto"
       on:click={() => {
         // @ts-ignore
-        document.getElementById("add-bookmark-modal").showModal();
-      }}
+        document.getElementById("settings").showModal();
+      }}>Open Settings</button
     >
-      + Add Bookmark
-    </button>
   </div>
   <hr />
 </nav>

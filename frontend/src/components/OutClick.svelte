@@ -2,7 +2,7 @@
     Following source code is taken from the package
     https://github.com/babakfp/svelte-outclick
  -->
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
 

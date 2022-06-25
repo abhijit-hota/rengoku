@@ -1,5 +1,5 @@
 import { writable, derived } from "svelte/store";
-import { api } from "../lib";
+import { api } from ".";
 
 export const queryParams = writable({
   sortBy: "date",
@@ -39,36 +39,49 @@ export const queryStr = derived(queryParams, (store) => {
   return "?" + queryParamStrings.join("&");
 });
 
+type Bookmark = {
+  id: number;
+  url: string;
+  meta: {
+    title: string;
+    description: string;
+    favicon: string;
+  };
+  created_at: number;
+  last_updated: number;
+  last_saved_offline: number;
+  tags: {
+    id: number;
+    name: string;
+    created_at: number;
+    last_updated: number;
+  }[];
+};
+
 const createBookmarksStore = () => {
-  /** @type {import("svelte/store").Writable<Bookmark[]>} */
-  const bm = writable([]);
-  const { set, subscribe, update } = bm;
+  const bookmarks = writable<Bookmark[]>([]);
+  const { set, subscribe, update } = bookmarks;
   return {
     subscribe,
-    fetch: async (q) => {
+    fetch: async (q: string) => {
       try {
         const res = await api("/bookmarks" + q);
         set(res.data);
-        // set([...res.data, ...res.data, ...res.data, ...res.data]);
-        // update((bookmarks) => [
-        //   ...bookmarks,
-        //   ...res.data.filter(({ id: newID }) => !bookmarks.find(({ id }) => id === newID)),
-        // ]);
       } catch (error) {
         return set([]);
       }
     },
-    add: (...newBookmarks) => {
+    add: (...newBookmarks: Bookmark[]) => {
       update((bookmarks) => [...bookmarks, ...newBookmarks]);
     },
-    delete: (id) => {
+    delete: (id: Bookmark["id"]) => {
       update((bookmarks) => {
         const i = bookmarks.findIndex((bookmark) => bookmark.id === id);
         bookmarks.splice(i, 1);
         return bookmarks;
       });
     },
-    updateOne: (id, /** @type {Bookmark} */ updatedBookmark) => {
+    updateOne: (id: Bookmark["id"], updatedBookmark: Bookmark) => {
       update((bookmarks) =>
         bookmarks.map((bookmark) =>
           bookmark.id === id ? { ...bookmark, ...updatedBookmark } : bookmark
