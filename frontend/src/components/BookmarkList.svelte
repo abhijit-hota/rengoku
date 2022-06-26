@@ -3,8 +3,9 @@
 
   import Bookmark from "./Bookmark.svelte";
 
-  import { bookmarks, queryParams, queryStr } from "../lib/stores";
-  import { modals } from "../components/Modal.svelte";
+  import { store } from "@lib";
+  const { bookmarks, queryParams, queryStr } = store;
+  import { modals } from "@Modal";
 
   onMount(() => bookmarks.fetch($queryStr));
   $: bookmarks.fetch($queryStr);

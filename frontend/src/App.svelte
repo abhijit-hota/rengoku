@@ -1,17 +1,24 @@
 <script lang="ts">
   import "./styles/water.min.css";
   import "./styles/style.css";
-  import { api } from "./lib";
 
-  import { Filter, SettingsModal, Folder, BookmarkList } from "./components";
-  import { modals } from "./components/Modal.svelte";
-  import AddBookmarkModal from "./components/AddBookmarkModal.svelte";
+  import { api } from "@lib";
+  import { modals } from "@Modal";
+  import {
+    Filter,
+    SettingsModal,
+    Folder,
+    BookmarkList,
+    AddBookmarkModal,
+    ImportModal,
+  } from "@components";
 </script>
 
 <nav>
   <div class="row">
     <h1>Rengoku</h1>
     <button class="m-l-auto" on:click={() => $modals["settings"].showModal()}>Open Settings</button>
+    <button on:click={() => $modals["import"].showModal()}>Import Bookmarks</button>
   </div>
   <hr />
 </nav>
@@ -32,6 +39,7 @@
 </aside>
 <SettingsModal />
 <AddBookmarkModal />
+<ImportModal />
 
 <style>
   nav {

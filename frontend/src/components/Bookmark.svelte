@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { bookmarks } from "../lib/stores";
-  import { api } from "../lib";
+  import { api, store } from "@lib";
   import ellipsisIcon from "../assets/ellipsis.png";
   import OutClick from "./OutClick.svelte";
 
-  export let bookmark: Bookmark;
+  export let bookmark: store.Bookmark;
   export let toggleMark: Function;
 
   let hovered = false;
@@ -13,7 +12,7 @@
   const deleteBookmark = async () => {
     try {
       const res = await api("/bookmarks/" + bookmark.id, "DELETE");
-      bookmarks.delete(bookmark.id);
+      store.bookmarks.delete(bookmark.id);
     } catch (error) {
       console.debug(error);
     }
@@ -30,13 +29,11 @@
 
   let menuOpen = false;
   let focusedID = 0;
-  /** @type {HTMLUListElement} */
-  let ref = null;
+  let ref: HTMLUListElement = null;
   $: {
     if (ref) {
       const btn = [...ref.children].filter(({ tagName }) => tagName === "LI")[focusedID]
-        .firstElementChild;
-      // @ts-ignore
+        .firstElementChild as HTMLButtonElement;
       btn.focus();
     }
   }
@@ -130,7 +127,7 @@
                           "/bookmarks/" + bookmark.id + "/meta",
                           "PUT"
                         );
-                      bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
+                      store.bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
                     } catch (error) {
                       console.error(error);
                     }

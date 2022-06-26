@@ -1,16 +1,15 @@
 <script lang="ts">
-  import MultiSelect from "svelte-multiselect";
-  import { bookmarks } from "../lib/stores";
-  import { api } from "../lib";
-  import Modal from "./Modal.svelte";
+  import MultiSelect, { ObjectOption } from "svelte-multiselect";
+  import { api, store } from "@lib";
+  import Modal, { modals } from "@Modal";
 
   let status: string;
   let message: string;
   let url: string;
-  let selectedTags = [];
+  let selectedTags: ObjectOption[] = [];
   let selectedFolders = [];
 
-  const isNewTag = (tag) => tag.label == tag.value && typeof tag.value === "string";
+  const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
   const addBookmark = async () => {
     status = "SUBMITTING";
 
@@ -38,9 +37,8 @@
     try {
       const newBookmark = await api("/bookmarks", "POST", dataToPost);
       status = "SUCCESS";
-      bookmarks.add(newBookmark);
-      // @ts-ignore
-      document.getElementById("add-bookmark-modal").close();
+      store.bookmarks.add(newBookmark);
+      $modals["add-bookmark"].close();
     } catch (error) {
       status = "ERROR";
       message = "An error occurred";
@@ -54,7 +52,16 @@
   <div class="col" slot="body">
     <div class="col m-b-1">
       <label for="url"><strong>URL</strong><span class="red">*</span></label>
-      <input type="url" bind:value={url} placeholder="Add new URL" name="url" id="url" required />
+      <!-- svelte-ignore a11y-autofocus -->
+      <input
+        autofocus
+        type="url"
+        bind:value={url}
+        placeholder="Add new URL"
+        name="url"
+        id="url"
+        required
+      />
     </div>
 
     <div class="col m-b-1">
@@ -74,14 +81,16 @@
     <div class="col m-b-1">
       <label for="folders"><strong>Folder</strong></label>
       {#await api("/folders") then folders}
-        <!-- {#if folders.length > 0} -->
-        <MultiSelect
-          inputClass="input-like"
-          outerDivClass="color-fix"
-          options={folders.map(({ id, name }) => ({ label: name, value: id }))}
-          bind:selected={selectedFolders}
-        />
-        <!-- {/if} -->
+        {#if folders.length > 0}
+          <MultiSelect
+            inputClass="input-like"
+            outerDivClass="color-fix"
+            options={folders.map(({ id, name }) => ({ label: name, value: id }))}
+            bind:selected={selectedFolders}
+          />
+        {:else}
+          No folders found. Please create from sidebar.
+        {/if}
       {/await}
     </div>
 

@@ -39,7 +39,7 @@ export const queryStr = derived(queryParams, (store) => {
   return "?" + queryParamStrings.join("&");
 });
 
-type Bookmark = {
+export type Bookmark = {
   id: number;
   url: string;
   meta: {

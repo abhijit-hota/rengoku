@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { api } from "../lib";
   import { onMount } from "svelte";
-  import Modal from "./Modal.svelte";
+  
+  import { api } from "@lib";
+  import Modal from "@Modal";
 
   let config = {
     shouldSaveOffline: null,

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { api } from "../lib";
+  import { api, store } from "@lib";
+  const { queryParams } = store;
 
-  import { queryParams } from "../lib/stores";
   import MultiSelect from "svelte-multiselect";
   let selectedTags = [];
   $: $queryParams.tags = selectedTags.map(({ value }) => value);

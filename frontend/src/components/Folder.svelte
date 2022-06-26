@@ -6,9 +6,9 @@
 </script>
 
 <script lang="ts">
-  import { queryParams } from "../lib/stores";
+  import { store } from "@lib";
+  const { queryParams } = store;
 
-  //	import { slide } from 'svelte/transition'
   export let tree;
   const { name, id, children } = tree;
 
