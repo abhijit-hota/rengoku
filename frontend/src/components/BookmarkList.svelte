@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, getContext } from "svelte";
 
-  import { bookmarks, queryParams, queryStr } from "../lib/stores";
   import Bookmark from "./Bookmark.svelte";
 
+  import { bookmarks, queryParams, queryStr } from "../lib/stores";
+  import { modals } from "../components/Modal.svelte";
+
   onMount(() => bookmarks.fetch($queryStr));
-  // TODO: queryParams.subscribe
   $: bookmarks.fetch($queryStr);
 
   // Child state
@@ -28,13 +29,7 @@
 <div class="sticky">
   <div class="row">
     <h2 style="padding-left: 0.5rem;">Showing 20 of 201</h2>
-    <button
-      class="m-l-auto"
-      on:click={() => {
-        // @ts-ignore
-        document.getElementById("add-bookmark-modal").showModal();
-      }}
-    >
+    <button class="m-l-auto" on:click={() => $modals["add-bookmark"].showModal()}>
       + Add Bookmark
     </button>
   </div>

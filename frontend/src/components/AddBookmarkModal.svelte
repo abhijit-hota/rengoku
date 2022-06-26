@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  const { open } = getContext("simple-modal");
-  const showSurprise = () => open(1, { message: "It's a modal!" });
-
   import MultiSelect from "svelte-multiselect";
   import { bookmarks } from "../lib/stores";
   import { api } from "../lib";
+  import Modal from "./Modal.svelte";
 
   let status: string;
   let message: string;
@@ -51,10 +48,10 @@
   };
 </script>
 
-<dialog id="add-bookmark-modal">
-  <header><h2>Add new bookmark</h2></header>
+<Modal key="add-bookmark" styles={{ dialog: "width: 600px;" }}>
+  <h2 slot="header">Add new bookmark</h2>
 
-  <div class="col">
+  <div class="col" slot="body">
     <div class="col m-b-1">
       <label for="url"><strong>URL</strong><span class="red">*</span></label>
       <input type="url" bind:value={url} placeholder="Add new URL" name="url" id="url" required />
@@ -93,18 +90,13 @@
     {/if}
   </div>
   <button
+    slot="footer"
     class="w-full"
     type="submit"
     disabled={status === "SUBMITTING"}
     on:click={addBookmark}
-    style="margin: 3em 0 1em 0;"
+    style="margin: 1em 0;"
   >
     {status === "SUBMITTING" ? "Loading" : "Add"}
   </button>
-</dialog>
-
-<style>
-  #add-bookmark-modal {
-    width: 600px;
-  }
-</style>
+</Modal>

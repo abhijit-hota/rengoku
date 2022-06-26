@@ -3,19 +3,15 @@
   import "./styles/style.css";
   import { api } from "./lib";
 
-  import { Filter, SettingsModal, AddBookmarkModal, Folder, BookmarkList } from "./components";
+  import { Filter, SettingsModal, Folder, BookmarkList } from "./components";
+  import { modals } from "./components/Modal.svelte";
+  import AddBookmarkModal from "./components/AddBookmarkModal.svelte";
 </script>
 
 <nav>
   <div class="row">
     <h1>Rengoku</h1>
-    <button
-      class="m-l-auto"
-      on:click={() => {
-        // @ts-ignore
-        document.getElementById("settings").showModal();
-      }}>Open Settings</button
-    >
+    <button class="m-l-auto" on:click={() => $modals["settings"].showModal()}>Open Settings</button>
   </div>
   <hr />
 </nav>
@@ -34,8 +30,8 @@
 <aside id="filters" class="sticky">
   <Filter />
 </aside>
-<AddBookmarkModal />
 <SettingsModal />
+<AddBookmarkModal />
 
 <style>
   nav {

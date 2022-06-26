@@ -66,6 +66,7 @@ dialog {
 }
 
 .icon-button {
+    line-height: 0;
     padding: 0.4em;
     margin: 0;
     width: 1.8em;

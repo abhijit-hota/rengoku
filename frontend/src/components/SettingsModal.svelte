@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from "../lib";
   import { onMount } from "svelte";
+  import Modal from "./Modal.svelte";
 
   let config = {
     shouldSaveOffline: null,
@@ -11,11 +12,9 @@
   });
 </script>
 
-<dialog id="settings">
-  <header>
-    <h2>Settings</h2>
-  </header>
-  <div class="col" style="width: 600px; max-height: 700px;">
+<Modal key="settings">
+  <h2 slot="header">Settings</h2>
+  <div slot="body" class="col" style="width: 600px; max-height: 700px;">
     <div class="row m-b-2">
       <h3>Save pages offline</h3>
       <input
@@ -72,7 +71,7 @@
       </div>
     {/each}
   </div>
-</dialog>
+</Modal>
 
 <style>
   .url-action {
