@@ -6,6 +6,7 @@
   import { store } from "@lib";
   const { bookmarks, queryParams, queryStr } = store;
   import { modals } from "@Modal";
+  import Popup from "./Popup.svelte";
 
   onMount(() => bookmarks.fetch($queryStr));
   $: bookmarks.fetch($queryStr);
@@ -29,10 +30,33 @@
 
 <div class="sticky">
   <div class="row">
-    <h2 style="padding-left: 0.5rem;">Showing 20 of 201</h2>
-    <button class="m-l-auto" on:click={() => $modals["add-bookmark"].showModal()}>
-      + Add Bookmark
-    </button>
+    <button on:click={() => $modals["add-bookmark"].showModal()}> + Add Bookmark </button>
+    <div class="m-l-auto row">
+      {#if marked.length > 0}
+        <span style="padding-right: 1em">
+          {marked.length} bookmark{marked.length > 1 ? "s" : ""} selected
+        </span>
+        <Popup>
+          <svelte:fragment slot="list-items">
+            <li role="none">
+              <button class="no-style" on:click={() => $modals["add-bookmark"].showModal()}>
+                + Add Bookmark
+              </button>
+            </li>
+            <li role="none">
+              <button class="no-style" on:click={() => $modals["add-folder"].showModal()}>
+                + Move to Folder
+              </button>
+            </li>
+            <li role="none">
+              <button class="no-style" on:click={() => $modals["add-tag"].showModal()}>
+                + Add Tags
+              </button>
+            </li>
+          </svelte:fragment>
+        </Popup>
+      {/if}
+    </div>
   </div>
   <hr />
 </div>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { api, store } from "@lib";
-  import ellipsisIcon from "../assets/ellipsis.png";
-  import OutClick from "./OutClick.svelte";
+  import Popup from "./Popup.svelte";
 
   export let bookmark: store.Bookmark;
   export let toggleMark: Function;
@@ -26,17 +25,6 @@
       hovered = false;
     }
   };
-
-  let menuOpen = false;
-  let focusedID = 0;
-  let ref: HTMLUListElement = null;
-  $: {
-    if (ref) {
-      const btn = [...ref.children].filter(({ tagName }) => tagName === "LI")[focusedID]
-        .firstElementChild as HTMLButtonElement;
-      btn.focus();
-    }
-  }
 </script>
 
 <div
@@ -52,96 +40,55 @@
     {/if}
     <h3 style="text-overflow: ellipsis;">{bookmark.meta.title}</h3>
     <div class="m-l-auto row">
-      <div class="popup">
-        <button
-          id={"menu-button-" + bookmark.id}
-          class="icon-button"
-          on:click={() => {
-            menuOpen = !menuOpen;
-          }}
-        >
-          <img src={ellipsisIcon} alt="Menu" style="filter: invert(1); transform: rotate(90deg);" />
-        </button>
-        <OutClick
-          on:outclick={() => {
-            menuOpen = false;
-          }}
-          excludeByQuerySelector={[
-            "#menu-button-" + bookmark.id,
-            "save-offline-button-" + bookmark.id,
-          ]}
-        >
-          {#if menuOpen}
-            <ul
-              class="menu"
-              on:keydown={(e) => {
-                const { key } = e;
-                if (!(key === "ArrowUp" || key === "ArrowDown")) {
-                  return;
-                }
-
-                e.preventDefault();
-                if (key === "ArrowDown") {
-                  focusedID = (focusedID + 1) % 6;
-                } else if (key === "ArrowUp") {
-                  if (focusedID <= 0) {
-                    focusedID = 5;
-                  } else {
-                    focusedID--;
-                  }
-                }
-              }}
-              bind:this={ref}
+      <Popup id={bookmark.id.toString()} excludeClicks={["#save-offline-button-" + bookmark.id]}>
+        <svelte:fragment slot="list-items">
+          <li role="none">
+            <button class="no-style">Edit tags</button>
+          </li>
+          <li role="none">
+            <button class="no-style">Edit folders</button>
+          </li>
+          <hr />
+          <li role="none">
+            <button
+              id={"save-offline-button-" + bookmark.id}
+              class="no-style"
+              on:click={() => {
+                api("/bookmarks/" + bookmark.id + "/save", "PUT");
+              }}>Save Offline</button
             >
-              <li role="none">
-                <button class="no-style">Edit tags</button>
-              </li>
-              <li role="none">
-                <button class="no-style">Edit folders</button>
-              </li>
-              <hr />
-              <li role="none">
-                <button
-                  id={"save-offline-button-" + bookmark.id}
-                  class="no-style"
-                  on:click={() => {
-                    api("/bookmarks/" + bookmark.id + "/save", "PUT");
-                  }}>Save Offline</button
-                >
-              </li>
-              {#if bookmark.last_saved_offline}
-                <li role="none">
-                  <a
-                    class="no-style"
-                    target="_blank"
-                    href={"http://localhost:8080/saved/" + bookmark.id}>Open saved copy</a
-                  >
-                </li>
-              {/if}
-              <li role="none">
-                <button
-                  class="no-style"
-                  on:click={async () => {
-                    try {
-                      const /** @type {Bookmark["meta"]}*/ res = await api(
-                          "/bookmarks/" + bookmark.id + "/meta",
-                          "PUT"
-                        );
-                      store.bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }}>Refetch Metadata</button
-                >
-              </li>
-              <hr />
-              <li role="none">
-                <button class="no-style red" on:click={deleteBookmark}>Delete</button>
-              </li>
-            </ul>
+          </li>
+          {#if bookmark.last_saved_offline}
+            <li role="none">
+              <a
+                class="no-style"
+                target="_blank"
+                href={"http://localhost:8080/saved/" + bookmark.id}>Open saved copy</a
+              >
+            </li>
           {/if}
-        </OutClick>
-      </div>
+          <li role="none">
+            <button
+              class="no-style"
+              on:click={async () => {
+                try {
+                  const /** @type {Bookmark["meta"]}*/ res = await api(
+                      "/bookmarks/" + bookmark.id + "/meta",
+                      "PUT"
+                    );
+                  store.bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
+                } catch (error) {
+                  console.error(error);
+                }
+              }}>Refetch Metadata</button
+            >
+          </li>
+          <hr />
+          <li role="none">
+            <button class="no-style red" on:click={deleteBookmark}>Delete</button>
+          </li>
+        </svelte:fragment>
+      </Popup>
       <input
         type="checkbox"
         name={bookmark.id.toString()}
@@ -212,35 +159,5 @@
     margin-left: 0px;
     padding: 4px 8px;
     width: max-content;
-  }
-
-  .popup .menu {
-    list-style-type: none;
-
-    background-color: var(--button-base);
-    border-radius: 6px;
-
-    padding: 0;
-    position: absolute;
-    margin-top: 0.5em;
-    z-index: 1000;
-  }
-  .popup .menu hr {
-    margin: 0;
-  }
-  .popup .menu li > * {
-    padding: 0.75em;
-    cursor: pointer;
-    width: calc(100% - 0.75em * 2);
-  }
-  .popup .menu li > *:hover,
-  .popup .menu li > *:focus {
-    background-color: var(--button-hover);
-  }
-  .popup .menu li:last-child > * {
-    border-radius: 0 0 6px 6px;
-  }
-  .popup .menu li:first-child > * {
-    border-radius: 6px 6px 0 0;
   }
 </style>
