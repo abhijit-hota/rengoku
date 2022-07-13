@@ -2,16 +2,12 @@
   import "./styles/water.min.css";
   import "./styles/style.css";
 
-  import { api } from "@lib";
+  import { SvelteToast } from "@zerodevx/svelte-toast";
+
   import { modals } from "@Modal";
-  import {
-    Filter,
-    SettingsModal,
-    Folder,
-    BookmarkList,
-    AddBookmarkModal,
-    ImportModal,
-  } from "@components";
+  import { Filter, SettingsModal, BookmarkList, AddBookmarkModal, ImportModal } from "@components";
+  import FolderWrapper from "./components/FolderWrapper.svelte";
+  import { queryParams } from "./lib/stores";
 </script>
 
 <nav>
@@ -23,13 +19,22 @@
   <hr />
 </nav>
 <aside id="folders" class="sticky">
-  <h2>Folders</h2>
-  <hr />
-  {#await api("/folders/tree") then folders}
-    {#each folders as tree}
-      <Folder {tree} />
-    {/each}
-  {/await}
+  <div class="row m-b-1">
+    <h2>Folders</h2>
+    {#if $queryParams.folder !== ""}
+      <button
+        class="m-l-auto"
+        style="margin-right: 0;"
+        on:click={() => {
+          $queryParams.folder = "";
+        }}>Show root</button
+      >
+    {/if}
+  </div>
+  <div style="overflow: auto; max-height: 70vh;">
+    <hr style="margin-bottom: 0 !important;" />
+    <FolderWrapper />
+  </div>
 </aside>
 <main>
   <BookmarkList />
@@ -40,6 +45,7 @@
 <SettingsModal />
 <AddBookmarkModal />
 <ImportModal />
+<SvelteToast options={{}} />
 
 <style>
   nav {

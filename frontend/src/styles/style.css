@@ -17,6 +17,9 @@ button {
 .no-style {
     all: unset;
 }
+.no-style:hover {
+    all: unset;
+}
 
 /** Global **/
 body {
