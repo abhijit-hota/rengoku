@@ -67,7 +67,7 @@ func CreateServer() *gin.Engine {
 	folderRouter := apiRouter.Group("/folders")
 	{
 		folderRouter.POST("", handlers.CreateFolder)
-		folderRouter.GET("", handlers.GetRootFolders)
+		folderRouter.GET("", handlers.GetFolders)
 		folderRouter.PATCH("/:id", handlers.UpdateFolderName)
 		folderRouter.DELETE("/:id", handlers.DeleteFolder)
 		folderRouter.GET("/tree", handlers.GetLinkTree)

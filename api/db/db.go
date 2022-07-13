@@ -58,13 +58,13 @@ CREATE TRIGGER IF NOT EXISTS on_tag_remove DELETE ON links_tags
 CREATE TABLE IF NOT EXISTS folders (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
-	path TEXT,
+	parent_id TEXT,
 	created_at INTEGER DEFAULT (unixepoch()),
 	last_updated INTEGER DEFAULT (unixepoch()),
-	UNIQUE(name, path)
+	UNIQUE(name, parent_id)
 );
-CREATE INDEX IF NOT EXISTS folder_path ON folders(path);
-CREATE TRIGGER IF NOT EXISTS update_folders_timestamp UPDATE OF name, path ON folders 
+CREATE INDEX IF NOT EXISTS folder_parent_id ON folders(parent_id);
+CREATE TRIGGER IF NOT EXISTS update_folders_timestamp UPDATE OF name, parent_id ON folders 
 	BEGIN
 		UPDATE folders SET last_updated = (unixepoch()) WHERE id = OLD.id;
 	END;

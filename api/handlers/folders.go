@@ -1,10 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"regexp"
-	"strconv"
-	"strings"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
@@ -12,53 +11,39 @@ import (
 )
 
 type Tree struct {
-	Id       int    `json:"id"`
+	Id       int64  `json:"id"`
 	Name     string `json:"name"`
 	Children []Tree `json:"children,omitempty"`
+}
+
+func transform(leaves []DB.Folder, parentId int64) []Tree {
+	var trees []Tree
+	for _, leaf := range leaves {
+		if leaf.ParentID == parentId {
+			trees = append(trees, Tree{
+				Id:       leaf.ID,
+				Name:     leaf.Name,
+				Children: transform(leaves, leaf.ID),
+			})
+		}
+	}
+	return trees
 }
 
 func GetLinkTree(ctx *gin.Context) {
 	db := DB.GetDB()
 
-	rows, err := db.Query(`SELECT id, name, path FROM folders`)
+	var rows []DB.Folder
+	err := db.Select(&rows, `SELECT id, name, parent_id FROM folders`)
 	utils.Must(err)
-	defer rows.Close()
 
-	linkTree := []Tree{}
+	linkTree := transform(rows, 0)
 
-	for rows.Next() {
-		var linkID int
-		var name string
-		var path string
-
-		err = rows.Scan(&linkID, &name, &path)
-		utils.Must(err)
-
-		pathArr := strings.Split(path+strconv.Itoa(linkID), "/")
-		cursor := &linkTree
-
-		depth := len(pathArr) - 1
-		for index, idStr := range pathArr {
-			id, _ := strconv.Atoi(idStr)
-
-			foundIdx := utils.FindFunc(*cursor, func(node Tree) bool { return node.Id == id })
-			if foundIdx == -1 {
-				*cursor = append(*cursor, Tree{Id: id})
-				foundIdx = len(*cursor) - 1
-			}
-			if depth == index {
-				(*cursor)[foundIdx].Id = linkID
-				(*cursor)[foundIdx].Name = name
-			}
-			cursor = &((*cursor)[foundIdx].Children)
-		}
-	}
-	err = rows.Err()
 	utils.Must(err)
 	ctx.JSON(http.StatusOK, linkTree)
 }
 
-func GetRootFolders(ctx *gin.Context) {
+func GetFolders(ctx *gin.Context) {
 	db := DB.GetDB()
 
 	var query struct {
@@ -97,34 +82,29 @@ func CreateFolder(ctx *gin.Context) {
 
 	var req struct {
 		NameRequest
-		Path string `json:"path,omitempty" form:"path"`
+		ParentID json.Number `json:"parent_id" form:"parent_id"`
 	}
-	if err := ctx.Bind(&req); err != nil {
+	req.ParentID = json.Number("0")
+
+	if err := ctx.BindJSON(&req); err != nil {
 		return
 	}
 
-	split := re.FindStringSubmatch(req.Path)
-	if len(split) > 0 {
-		parentPath, immediateParent := split[1], split[2]
+	if val, err := req.ParentID.Int64(); val != 0 && err != nil {
+		var count int
+		err := db.Get(&count, "SELECT COUNT(1) from folders WHERE id = ?", req.ParentID)
 
-		query := "SELECT COUNT(1) FROM folders WHERE id = ? AND path = ?"
-		var numId int
-		err := db.Get(&numId, query, immediateParent, parentPath)
-
-		if numId != 1 || err != nil {
+		if err != nil || count != 1 {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "INVALID_FOLDER_PATH"})
 			return
 		}
-	} else {
-		req.Path = ""
 	}
 
 	var folder DB.Folder
 
-	stmt := "INSERT INTO folders (name, path) VALUES (?, ?) RETURNING *"
-	row := db.QueryRowx(stmt, req.Name, req.Path)
+	stmt := "INSERT INTO folders (name, parent_id) VALUES (?, ?) RETURNING *"
+	row := db.QueryRowx(stmt, req.Name, req.ParentID)
 	err := row.StructScan(&folder)
-
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
@@ -146,7 +126,7 @@ func UpdateFolderName(ctx *gin.Context) {
 	}
 
 	var req NameRequest
-	if err := ctx.Bind(&req); err != nil {
+	if err := ctx.BindJSON(&req); err != nil {
 		return
 	}
 
