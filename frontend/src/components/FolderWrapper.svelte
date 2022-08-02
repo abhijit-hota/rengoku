@@ -9,12 +9,13 @@
 <script lang="ts">
   import { api } from "@lib";
   import { Folder } from "@components";
+  import Loader from "./Loader.svelte";
 </script>
 
 {#await api("/folders/tree")}
-  Loading...
+  <Loader />
 {:then tree}
   <Folder {tree} />
 {:catch}
-  Error occurred while loading folders.
+  <span class="red"> Error occurred while loading folders.</span>
 {/await}

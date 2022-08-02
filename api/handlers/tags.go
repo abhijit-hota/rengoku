@@ -62,7 +62,7 @@ func CreateTag(ctx *gin.Context) {
 	err := row.StructScan(&tag)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"cause": "NAME_ALREADY_PRESENT"})
 			return
 		}
 		panic(err)
@@ -113,7 +113,7 @@ func UpdateTagName(ctx *gin.Context) {
 	_, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"cause": "NAME_ALREADY_PRESENT"})
 			return
 		}
 		panic(err)

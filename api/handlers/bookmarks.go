@@ -40,7 +40,7 @@ func AddBookmark(ctx *gin.Context) {
 	if err != nil {
 		if DB.IsUniqueErr(err) {
 			utils.Must(tx.Rollback())
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"cause": "NAME_ALREADY_PRESENT"})
 			return
 		}
 		panic(err)

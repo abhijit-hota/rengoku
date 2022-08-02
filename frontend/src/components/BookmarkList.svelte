@@ -2,26 +2,31 @@
   import { faFolderPlus, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
   import { toast } from "@zerodevx/svelte-toast";
 
-  import { Bookmark } from "@components";
+  import { Bookmark, Loader } from "@components";
   import { api, store } from "@lib";
   import { modals } from "@Modal";
   import BatchActionButton from "./BatchActionButton.svelte";
 
   const { bookmarks, queryParams, queryStr, stats } = store;
 
+  // UI State
+  let fetchingStatus: "LOADING" | "DONE" | "ERROR" = "LOADING";
+
   const getBookmarks = async () => {
     try {
+      fetchingStatus = "LOADING";
       const res = await api("/bookmarks" + $queryStr);
+      fetchingStatus = "DONE";
       return res;
     } catch (error) {
       // TODO
-      console.debug(error);
+      fetchingStatus = "ERROR";
     }
   };
 
   let currentPage = 0;
 
-  queryStr.subscribe((q) => {
+  queryStr.subscribe(() => {
     if ($queryParams.page !== currentPage && $queryParams.page !== 0) {
       currentPage = $queryParams.page;
       getBookmarks().then((res) => {
@@ -66,8 +71,10 @@
       <button class="w-full" on:click={() => $modals["add-bookmark"].showModal()}>
         + Add Bookmark
       </button>
-      <hr />
-      <span>Showing {$bookmarks.length} of a total of {$stats.total} bookmarks</span>
+      {#if $bookmarks.length}
+        <hr />
+        <span>Showing {$bookmarks.length} of {$stats.total} bookmarks</span>
+      {/if}
     </div>
     <div class="m-l-auto">
       {#if marked.length > 0}
@@ -78,6 +85,12 @@
           handler={async () => {
             const res = await api("/bookmarks", "DELETE", { ids: marked });
             bookmarks.delete(...marked);
+            marked = [];
+            $stats = {
+              page: 0,
+              total: 0,
+              moreLeft: false,
+            };
             toast.push(`Deleted ${res.deleted} bookmarks`);
           }}
         />
@@ -92,17 +105,19 @@
   </div>
   <hr />
 </div>
-{#each $bookmarks as bookmark}
-  <Bookmark {bookmark} {toggleMark} />
-{/each}
+
+{#if fetchingStatus === "LOADING"}
+  <Loader />
+{:else if fetchingStatus === "ERROR"}
+  Error
+{:else}
+  {#each $bookmarks as bookmark}
+    <Bookmark {bookmark} {toggleMark} />
+  {/each}
+{/if}
 
 {#if $stats.moreLeft}
-  <div
-    style="text-align: center;"
-    on:click={() => {
-      $queryParams.page++;
-    }}
-  >
+  <div style="text-align: center;" on:click={() => $queryParams.page++}>
     <button>Load More</button>
   </div>
 {/if}

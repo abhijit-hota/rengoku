@@ -1,7 +1,9 @@
 <script lang="ts">
   import MultiSelect, { ObjectOption } from "svelte-multiselect";
-  import { api, store } from "@lib";
+  import { api, store, errors } from "@lib";
   import Modal, { modals } from "@Modal";
+  import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import Fa from "svelte-fa";
 
   let status: string;
   let message: string;
@@ -24,7 +26,9 @@
         ];
       } catch (error) {
         status = "ERROR";
-        message = "An error occurred";
+        if (error.cause === errors.NAME_ALREADY_PRESENT) {
+          message = "A tag with the same name is already present.";
+        }
         return;
       }
     }
@@ -38,10 +42,13 @@
       const newBookmark = await api("/bookmarks", "POST", dataToPost);
       status = "SUCCESS";
       store.bookmarks.add(newBookmark);
+      store.stats.update((val) => ({ ...val, total: val.total + 1 }));
       $modals["add-bookmark"].close();
     } catch (error) {
       status = "ERROR";
-      message = "An error occurred";
+      if (error.cause === errors.NAME_ALREADY_PRESENT) {
+        message = "The same URL is already present.";
+      }
     }
   };
 </script>
@@ -101,11 +108,23 @@
   <button
     slot="footer"
     class="w-full"
-    type="submit"
     disabled={status === "SUBMITTING"}
     on:click={addBookmark}
+    on:keydown|preventDefault|stopPropagation={(e) => {
+      if (e.key === " " || e.key === "Enter") addBookmark();
+    }}
     style="margin: 1em 0;"
   >
-    {status === "SUBMITTING" ? "Loading" : "Add"}
+    {#if status === "SUBMITTING"}
+      <Fa icon={faSpinner} size="lg" spin />
+    {:else}
+      Add
+    {/if}
   </button>
 </Modal>
+
+<style>
+  :global(ul.options) {
+    max-height: 150px;
+  }
+</style>

@@ -13,7 +13,7 @@ export const queryParams = writable({
 export const stats = writable({
   page: 0,
   total: 0,
-  moreLeft: true,
+  moreLeft: false,
 });
 
 export const queryStr = derived(queryParams, (store) => {

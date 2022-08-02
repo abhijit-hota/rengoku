@@ -104,7 +104,7 @@
     <p>{bookmark.meta.description}</p>
   {/if}
   {#if bookmark.tags.length > 0}
-    <div class="footer row">
+    <div id="footer" class="row">
       <div class="tags">
         {#each bookmark.tags as tag}<div class="tag">{tag.name}</div>{/each}
       </div>
@@ -149,7 +149,8 @@
 
   .tags {
     display: flex;
-    margin-top: 0.5em;
+    flex-wrap: nowrap;
+    overflow-x: scroll;
   }
 
   .tag {

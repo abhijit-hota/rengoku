@@ -107,7 +107,7 @@ func CreateFolder(ctx *gin.Context) {
 	err := row.StructScan(&folder)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"cause": "NAME_ALREADY_PRESENT"})
 			return
 		}
 		panic(err)
@@ -137,7 +137,7 @@ func UpdateFolderName(ctx *gin.Context) {
 	_, err := tx.Exec(statement, req.Name, uri.ID, req.Name)
 	if err != nil {
 		if DB.IsUniqueErr(err) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "NAME_ALREADY_PRESENT"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"cause": "NAME_ALREADY_PRESENT"})
 			return
 		}
 		panic(err)
