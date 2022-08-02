@@ -136,7 +136,7 @@ func GetBookmarks(ctx *gin.Context) {
 	dbQuery := `
 SELECT links.id, links.url, links.created_at, links.last_updated, links.last_saved_offline,
 	   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
-	   meta.title, meta.favicon, meta.description
+	   meta.title, meta.favicon, meta.description, COUNT(1) OVER() AS full_count
 FROM links 
 LEFT JOIN meta ON meta.link_id = links.id 
 LEFT JOIN links_folders ON links_folders.link_id = links.id 
@@ -186,6 +186,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 	defer rows.Close()
 
 	bookmarks := make([]BookmarkRes, 0)
+	var fullCount int
 	for rows.Next() {
 		var bm BookmarkRes
 		var tagStr string
@@ -199,6 +200,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 			&bm.Meta.Title,
 			&bm.Meta.Favicon,
 			&bm.Meta.Description,
+			&fullCount,
 		)
 		utils.Must(err)
 		if tagStr == "" {
@@ -218,7 +220,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 	}
 	utils.Must(rows.Err())
 
-	ctx.JSON(http.StatusOK, gin.H{"data": bookmarks, "page": queryParams.Page})
+	ctx.JSON(http.StatusOK, gin.H{"data": bookmarks, "page": queryParams.Page, "total": fullCount})
 }
 
 func DeleteBookmarkProperty(ctx *gin.Context) {

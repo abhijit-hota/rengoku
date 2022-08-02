@@ -1,20 +1,53 @@
 <script lang="ts">
-  import { onMount, getContext } from "svelte";
+  import { faFolderPlus, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+  import { toast } from "@zerodevx/svelte-toast";
 
-  import Bookmark from "./Bookmark.svelte";
-
-  import { store } from "@lib";
-  const { bookmarks, queryParams, queryStr } = store;
+  import { Bookmark } from "@components";
+  import { api, store } from "@lib";
   import { modals } from "@Modal";
-  import Popup from "./Popup.svelte";
+  import BatchActionButton from "./BatchActionButton.svelte";
 
-  onMount(() => bookmarks.fetch($queryStr));
-  $: bookmarks.fetch($queryStr);
+  const { bookmarks, queryParams, queryStr, stats } = store;
+
+  const getBookmarks = async () => {
+    try {
+      const res = await api("/bookmarks" + $queryStr);
+      return res;
+    } catch (error) {
+      // TODO
+      console.debug(error);
+    }
+  };
+
+  let currentPage = 0;
+
+  queryStr.subscribe((q) => {
+    if ($queryParams.page !== currentPage && $queryParams.page !== 0) {
+      currentPage = $queryParams.page;
+      getBookmarks().then((res) => {
+        bookmarks.add(...res.data);
+        stats.set({
+          total: res.total,
+          moreLeft: $bookmarks.length < res.total,
+          page: res.page,
+        });
+      });
+    } else {
+      $queryParams.page = 0;
+      getBookmarks().then((res) => {
+        bookmarks.set(res.data);
+        stats.set({
+          total: res.total,
+          moreLeft: res.total > 20,
+          page: res.page,
+        });
+      });
+    }
+  });
 
   // Child state
-  let marked = [];
-
-  const toggleMark = (bookmarkID) => {
+  let marked: number[] = [];
+  const toggleMark = (bookmarkID: number) => {
     const index = marked.indexOf(bookmarkID);
     const notPresent = index === -1;
 
@@ -23,38 +56,37 @@
     } else {
       marked.splice(index, 1);
     }
-
     marked = marked;
   };
 </script>
 
 <div class="sticky">
   <div class="row">
-    <button on:click={() => $modals["add-bookmark"].showModal()}> + Add Bookmark </button>
-    <div class="m-l-auto row">
+    <div>
+      <button class="w-full" on:click={() => $modals["add-bookmark"].showModal()}>
+        + Add Bookmark
+      </button>
+      <hr />
+      <span>Showing {$bookmarks.length} of a total of {$stats.total} bookmarks</span>
+    </div>
+    <div class="m-l-auto">
       {#if marked.length > 0}
-        <span style="padding-right: 1em">
+        <BatchActionButton
+          action="DELETE"
+          title="Delete"
+          icon={faTrash}
+          handler={async () => {
+            const res = await api("/bookmarks", "DELETE", { ids: marked });
+            bookmarks.delete(...marked);
+            toast.push(`Deleted ${res.deleted} bookmarks`);
+          }}
+        />
+        <BatchActionButton action="TAGS" title="Add Tags" icon={faTags} />
+        <BatchActionButton action="FOLDER" title="Move to Folder" icon={faFolderPlus} />
+        <hr />
+        <span>
           {marked.length} bookmark{marked.length > 1 ? "s" : ""} selected
         </span>
-        <Popup>
-          <svelte:fragment slot="list-items">
-            <li role="none">
-              <button class="no-style" on:click={() => $modals["add-bookmark"].showModal()}>
-                + Add Bookmark
-              </button>
-            </li>
-            <li role="none">
-              <button class="no-style" on:click={() => $modals["add-folder"].showModal()}>
-                + Move to Folder
-              </button>
-            </li>
-            <li role="none">
-              <button class="no-style" on:click={() => $modals["add-tag"].showModal()}>
-                + Add Tags
-              </button>
-            </li>
-          </svelte:fragment>
-        </Popup>
       {/if}
     </div>
   </div>
@@ -63,11 +95,14 @@
 {#each $bookmarks as bookmark}
   <Bookmark {bookmark} {toggleMark} />
 {/each}
-<div
-  style="text-align: center;"
-  on:click={() => {
-    $queryParams.page++;
-  }}
->
-  <button>Load More</button>
-</div>
+
+{#if $stats.moreLeft}
+  <div
+    style="text-align: center;"
+    on:click={() => {
+      $queryParams.page++;
+    }}
+  >
+    <button>Load More</button>
+  </div>
+{/if}

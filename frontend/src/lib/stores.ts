@@ -62,23 +62,15 @@ const createBookmarksStore = () => {
   const bookmarks = writable<Bookmark[]>([]);
   const { set, subscribe, update } = bookmarks;
   return {
+    set,
     subscribe,
-    fetch: async (q: string) => {
-      try {
-        const res = await api("/bookmarks" + q);
-        set(res.data);
-      } catch (error) {
-        return set([]);
-      }
-    },
+    update,
     add: (...newBookmarks: Bookmark[]) => {
       update((bookmarks) => [...bookmarks, ...newBookmarks]);
     },
-    delete: (id: Bookmark["id"]) => {
+    delete: (...ids: Bookmark["id"][]) => {
       update((bookmarks) => {
-        const i = bookmarks.findIndex((bookmark) => bookmark.id === id);
-        bookmarks.splice(i, 1);
-        return bookmarks;
+        return bookmarks.filter(({ id }) => !ids.includes(id));
       });
     },
     updateOne: (id: Bookmark["id"], updatedBookmark: Bookmark) => {
