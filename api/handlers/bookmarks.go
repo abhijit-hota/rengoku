@@ -470,16 +470,15 @@ func ImportBookmarks(ctx *gin.Context) {
 			tx.MustExec(stmt, linkID, tagId)
 		}
 
-		path := ""
-		var folderID int
+		var folderID, parentID int
 		for _, folder := range strings.Split(bm.Folder, common.FolderPathSeparator) {
 
-			stmt = "INSERT OR IGNORE INTO folders (name, path) VALUES (?, ?)"
-			tx.MustExec(stmt, folder, path)
+			stmt = "INSERT OR IGNORE INTO folders (name, parent_id) VALUES (?, ?)"
+			tx.MustExec(stmt, folder, parentID)
 
-			tx.Get(&folderID, "SELECT id FROM folders WHERE name = ? AND PATH = ?", folder, path)
+			tx.Get(&folderID, "SELECT id FROM folders WHERE name = ? AND parent_id = ?", folder, parentID)
 
-			path += strconv.Itoa(folderID) + "/"
+			parentID = folderID
 		}
 		stmt = "INSERT OR IGNORE INTO links_folders (link_id, folder_id) VALUES (?, ?)"
 		tx.MustExec(stmt, linkID, folderID)
