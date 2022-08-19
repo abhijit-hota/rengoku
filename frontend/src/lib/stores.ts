@@ -1,5 +1,5 @@
 import { writable, derived } from "svelte/store";
-import { api } from ".";
+import api from "./api";
 
 export const queryParams = writable({
   sortBy: "date",
@@ -58,6 +58,13 @@ export type Bookmark = {
   }[];
 };
 
+export type Tag = {
+  id: number;
+  name: string;
+  created_at: number;
+  last_updated: number;
+};
+
 const createBookmarksStore = () => {
   const bookmarks = writable<Bookmark[]>([]);
   const { set, subscribe, update } = bookmarks;
@@ -83,4 +90,33 @@ const createBookmarksStore = () => {
   };
 };
 
+const createTagsStore = () => {
+  const tags = writable<Tag[]>([]);
+  const { set, subscribe, update } = tags;
+  return {
+    subscribe,
+    init: async () => {
+      try {
+        const res = await api("/tags");
+        set(res);
+      } catch (error) {
+        // TODO
+        set([]);
+      }
+    },
+    add: (...newTags: Tag[]) => {
+      update((tags) => [...tags, ...newTags]);
+    },
+    delete: (...ids: Tag["id"][]) => {
+      update((tags) => {
+        return tags.filter(({ id }) => !ids.includes(id));
+      });
+    },
+    updateOne: (id: Tag["id"], updatedTag: Tag) => {
+      update((tags) => tags.map((tag) => (tag.id === id ? { ...tag, ...updatedTag } : tag)));
+    },
+  };
+};
+
 export const bookmarks = createBookmarksStore();
+export const tags = createTagsStore();

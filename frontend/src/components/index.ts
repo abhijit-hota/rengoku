@@ -5,6 +5,5 @@ export { default as Counter } from "./Counter.svelte";
 export { default as Filter } from "./Filter.svelte";
 export { default as Folder } from "./Folder.svelte";
 export { default as Nav } from "./Nav.svelte";
-export { default as SettingsModal } from "./SettingsModal.svelte";
 export { default as ImportModal } from "./ImportModal.svelte";
 export { default as Loader } from "./Loader.svelte";

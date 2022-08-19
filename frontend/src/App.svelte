@@ -4,14 +4,18 @@
 
   import { Route } from "tinro";
 
-  import { modals } from "@Modal";
   import Home from "./Home.svelte";
   import SettingsPage from "./components/SettingsPage.svelte";
+  import { store } from "@lib";
+
+  const { tags } = store;
 </script>
 
-<Route path="/">
-  <Home />
-</Route>
-<Route path="/settings">
-  <SettingsPage />
-</Route>
+{#await tags.init() then}
+  <Route path="/">
+    <Home />
+  </Route>
+  <Route path="/settings/*">
+    <SettingsPage />
+  </Route>
+{/await}

@@ -40,7 +40,10 @@ func UpdateURLActions(ctx *gin.Context) {
 			urlAction.Tags = []int64{}
 		}
 		cfg.URLActions = append(cfg.URLActions, urlAction)
-		break
+		utils.UpdateConfigFile(cfg)
+		ctx.JSON(http.StatusOK, gin.H{"success": true})
+		return
+
 	case "PUT":
 		// TODO: Shift to merging logic
 		for index, rule := range cfg.URLActions {
@@ -62,7 +65,6 @@ func UpdateURLActions(ctx *gin.Context) {
 			}
 		}
 	}
-
 	ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
 	return
 }

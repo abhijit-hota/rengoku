@@ -5,6 +5,8 @@
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
 
+  const { tags } = store;
+
   let status: string;
   let message: string;
   let url: string;
@@ -73,16 +75,14 @@
 
     <div class="col m-b-1">
       <label for="tags"><strong>Tags</strong></label>
-      {#await api("/tags") then tags}
-        <MultiSelect
-          inputClass="input-like"
-          outerDivClass="color-fix"
-          allowUserOptions
-          addOptionMsg="+ Create new tag"
-          options={tags.map(({ id, name }) => ({ label: name, value: id }))}
-          bind:selected={selectedTags}
-        />
-      {/await}
+      <MultiSelect
+        inputClass="input-like"
+        outerDivClass="color-fix"
+        allowUserOptions
+        addOptionMsg="+ Create new tag"
+        options={$tags.map(({ id, name }) => ({ label: name, value: id }))}
+        bind:selected={selectedTags}
+      />
     </div>
 
     <div class="col m-b-1">

@@ -1,14 +1,45 @@
+<script context="module" lang="ts">
+  export type URLAction = {
+    pattern: string;
+    matchDetection: string;
+    shouldSaveOffline: boolean;
+    tags: number[];
+    folders: number[];
+  };
+  export type Config = {
+    shouldSaveOffline: boolean;
+    urlActions: URLAction[];
+  };
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
 
   import { api } from "@lib";
+  import { Route, active } from "tinro";
+  import UrlAction from "./URLAction.svelte";
+  import NewUrlAction from "./NewURLAction.svelte";
 
-  let config = {
-    shouldSaveOffline: null,
+  let config: Config = {
+    shouldSaveOffline: false,
     urlActions: [],
   };
+  const removeURLAction = (ev: CustomEvent<{ pattern: string }>) => {
+    config = {
+      ...config,
+      urlActions: config.urlActions.filter(({ pattern }) => !(pattern === ev.detail.pattern)),
+    };
+  };
+  const addURLAction = (ev: CustomEvent<{ urlAction: URLAction }>) => {
+    config = {
+      ...config,
+      urlActions: [...config.urlActions, ev.detail.urlAction],
+    };
+  };
+
   onMount(async () => {
     config = await api("/config");
+    config.urlActions = config.urlActions || [];
   });
 </script>
 
@@ -19,63 +50,42 @@
   <hr />
 </nav>
 
-<div class="col" style="width: 600px; max-height: 700px;">
-  <div class="row m-b-2">
-    <h3>Save pages offline</h3>
-    <input
-      class="m-l-auto"
-      type="checkbox"
-      name="saveOfflineDefault"
-      id="saveOfflineDefault"
-      bind:checked={config.shouldSaveOffline}
-    />
-  </div>
+<div class="setting-wrapper">
+  <aside id="menu" role="menu">
+    <a href="/settings/account" use:active data-active-class="active-menu">My Account</a>
+    <a href="/settings/app" use:active data-active-class="active-menu">App Settings</a>
+    <a href="/settings/url-actions" use:active data-active-class="active-menu">URL Actions</a>
+    <a href="/settings/ui" use:active data-active-class="active-menu">UI Settings</a>
+  </aside>
 
-  <h3>URL Actions</h3>
-  <hr />
-  {#each config.urlActions as urlAction, i}
-    <div class="url-action m-b-2">
-      <div class="row w-100">
-        <div class="col" style="flex-grow: 3">
-          <label for={"pattern" + i}>Pattern</label>
-          <input type="text" id={"pattern" + i} bind:value={urlAction.pattern} readonly disabled />
-        </div>
+  <div id="setting-content" class="col">
+    <Route path="/app">
+      <div class="row m-b-2">
+        <h3>Save pages offline</h3>
+        <input
+          class="m-l-auto"
+          type="checkbox"
+          name="saveOfflineDefault"
+          id="saveOfflineDefault"
+          bind:checked={config.shouldSaveOffline}
+        />
+      </div>
+    </Route>
 
-        <div class="col">
-          <label for={"matchDetection" + i}>Match detection</label>
-          <select
-            id={"matchDetection" + i}
-            name={"matchDetection" + i}
-            bind:value={urlAction.matchDetection}
-          >
-            <option value="starts_with">Starts with (default)</option>
-            <option value="regex">Regex</option>
-            <option value="origin">Origin</option>
-            <option value="domain">Domain</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div class="row">
-          <input
-            type="checkbox"
-            id={"saveOffline" + i}
-            name={"saveOffline" + i}
-            bind:value={urlAction.shouldSaveOffline}
-          />
-          <label for="'saveOffline' + i">Save offline</label>
-        </div>
-      </div>
+    <Route path="/url-actions">
+      <h3>URL Actions</h3>
       <hr />
-    </div>
-  {/each}
+      <div>
+        {#each config.urlActions || [] as urlAction, i}
+          <UrlAction {urlAction} key={i} on:removeURLAction={removeURLAction} />
+        {/each}
+      </div>
+      <NewUrlAction on:addURLAction={addURLAction} />
+    </Route>
+  </div>
 </div>
 
 <style>
-  .url-action {
-    background-color: var(--background-alt);
-    border-radius: 6px;
-  }
   nav {
     grid-area: nav;
     padding-top: 20px;
@@ -83,5 +93,28 @@
     position: sticky;
     top: 0px;
     background-color: var(--background-body);
+  }
+  .setting-wrapper {
+    display: flex;
+  }
+  #menu {
+    display: flex;
+    flex-direction: column;
+    margin-right: 2em;
+    width: 15vw;
+  }
+  #menu a {
+    padding: 0.5em 1em;
+    font-weight: bold;
+    text-decoration: none;
+    color: antiquewhite;
+    border-radius: 6px;
+  }
+  #menu a:hover,
+  :global(.active-menu) {
+    background-color: var(--background-alt);
+  }
+  #setting-content {
+    width: 100%;
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, store } from "@lib";
-  const { queryParams } = store;
+  const { queryParams, tags } = store;
 
   import MultiSelect from "svelte-multiselect";
   let selectedTags = [];
@@ -55,16 +55,14 @@
     Clear
   </button>
 </div>
-{#await api("/tags") then tags}
-  <MultiSelect
-    inputClass="input-like"
-    placeholder="Search tags"
-    removeAllTitle="Clear all tags"
-    outerDivClass="color-fix filter-tags"
-    options={tags.map(({ id, name }) => ({ label: name, value: id }))}
-    bind:selected={selectedTags}
-  />
-{/await}
+<MultiSelect
+  inputClass="input-like"
+  placeholder="Search tags"
+  removeAllTitle="Clear all tags"
+  outerDivClass="color-fix filter-tags"
+  options={$tags.map(({ id, name }) => ({ label: name, value: id }))}
+  bind:selected={selectedTags}
+/>
 
 <style>
   input[type="radio"],

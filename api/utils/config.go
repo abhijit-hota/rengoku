@@ -12,8 +12,8 @@ type URLAction struct {
 	Pattern           string  `json:"pattern" binding:"required"`
 	MatchDetection    string  `json:"matchDetection" binding:"required"`
 	ShouldSaveOffline bool    `json:"shouldSaveOffline"`
-	Tags              []int64 `json:"tags,omitempty"`
-	Folders           []int64 `json:"folder,omitempty"`
+	Tags              []int64 `json:"tags"`
+	Folders           []int64 `json:"folders"`
 }
 
 func (u URLAction) Match(urlStr string) bool {
@@ -51,6 +51,7 @@ var configPath string
 func LoadConfig() {
 	configPath = os.Getenv("CONFIG_PATH")
 	file := MustGet(os.OpenFile(configPath, os.O_RDONLY, os.ModePerm))
+	defer file.Close()
 
 	Must(json.NewDecoder(file).Decode(&config))
 }
@@ -66,12 +67,13 @@ func UpdateConfigFile(updatedConfig Config) {
 	Must(err)
 
 	// Load config again after updating file
-	LoadConfig()
+	*config = updatedConfig
 }
 
 func GetConfig() Config {
 	if config == nil {
 		LoadConfig()
 	}
+
 	return *config
 }
