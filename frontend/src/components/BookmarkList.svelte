@@ -64,6 +64,9 @@
     }
     marked = marked;
   };
+  const selectAll = () => {
+    marked = $bookmarks.map(({ id }) => id);
+  };
 </script>
 
 <div class="sticky">
@@ -74,7 +77,9 @@
       </button>
       {#if $bookmarks.length > 0}
         <hr />
-        <span>Showing {$bookmarks.length} of {$stats.total} bookmarks</span>
+        <span
+          >Showing {$bookmarks.length} of {$stats.total} bookmark{$stats.total > 1 ? "s" : ""}</span
+        >
       {/if}
     </div>
     <div class="m-l-auto">
@@ -105,9 +110,30 @@
         />
         <BatchActionButton action="FOLDER" title="Move to Folder" icon={faFolderPlus} />
         <hr />
-        <span>
-          {marked.length} bookmark{marked.length > 1 ? "s" : ""} selected
-        </span>
+        <div style="display: flex; justify-content: space-between;">
+          <div>
+            {marked.length} bookmark{marked.length > 1 ? "s" : ""} selected
+          </div>
+          <div>
+            <input
+              indeterminate={marked.length > 0 && marked.length < $bookmarks.length}
+              type="checkbox"
+              name="Select All"
+              class="bookmark-checkbox"
+              on:change={(e) => {
+                if (e.currentTarget.checked) {
+                  if (e.currentTarget.indeterminate) {
+                    marked = [];
+                  } else {
+                    selectAll();
+                  }
+                } else {
+                  marked = [];
+                }
+              }}
+            />
+          </div>
+        </div>
       {/if}
     </div>
   </div>

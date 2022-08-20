@@ -6,7 +6,7 @@
   export let toggleMark: Function;
 
   let hovered = false;
-  let checked = false;
+  export let checked = false;
 
   const deleteBookmark = async () => {
     try {
