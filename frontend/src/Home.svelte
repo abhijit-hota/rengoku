@@ -32,15 +32,15 @@
 </nav>
 
 <aside id="folders" class="sticky">
-  <div class="row m-b-1">
+  <div class="row">
     <h2>Folders</h2>
     {#if $queryParams.folder !== ""}
       <button
         class="m-l-auto"
-        style="margin-right: 0;"
+        style="margin: 0;"
         on:click={() => {
           $queryParams.folder = "";
-        }}>Show root</button
+        }}>Show all</button
       >
     {/if}
   </div>

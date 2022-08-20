@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { faFolderPlus, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+  import { faFolderPlus, faGhost, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
   import { toast } from "@zerodevx/svelte-toast";
 
   import { Bookmark, Loader } from "@components";
   import { api, store } from "@lib";
   import { modals } from "@Modal";
   import BatchActionButton from "./BatchActionButton.svelte";
+  import Fa from "svelte-fa";
 
   const { bookmarks, queryParams, queryStr, stats } = store;
 
@@ -71,7 +72,7 @@
       <button class="w-full" on:click={() => $modals["add-bookmark"].showModal()}>
         + Add Bookmark
       </button>
-      {#if $bookmarks.length}
+      {#if $bookmarks.length > 0}
         <hr />
         <span>Showing {$bookmarks.length} of {$stats.total} bookmarks</span>
       {/if}
@@ -110,10 +111,16 @@
   <Loader />
 {:else if fetchingStatus === "ERROR"}
   Error
-{:else}
+{:else if $bookmarks.length > 0}
   {#each $bookmarks as bookmark}
     <Bookmark {bookmark} {toggleMark} />
   {/each}
+{:else}
+  <div id="not-found">
+    <Fa icon={faGhost} size="3x" class="bounce" />
+    <div id="shadow" />
+    <span class="message"> No bookmarks found </span>
+  </div>
 {/if}
 
 {#if $stats.moreLeft}
@@ -121,3 +128,45 @@
     <button>Load More</button>
   </div>
 {/if}
+
+<style>
+  #not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 3em;
+  }
+  #not-found .message {
+    margin-top: 1em;
+    font-weight: bold;
+    opacity: 0.7;
+  }
+  :global(.bounce) {
+    animation: mover 1s infinite alternate;
+  }
+  #shadow {
+    width: 30px;
+    height: 10px;
+    border-radius: 100%;
+    background-color: #dbdbdb;
+    opacity: 0.3;
+    animation: expand 1s infinite alternate;
+  }
+
+  @keyframes mover {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-5px);
+    }
+  }
+  @keyframes expand {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(0.8);
+    }
+  }
+</style>
