@@ -324,31 +324,34 @@ func BulkAddBookmarkTags(ctx *gin.Context) {
 	db := DB.GetDB()
 
 	var body struct {
-		LinkIds []int `json:"link_ids" binding:"required"`
-		TagIds  []int `json:"tag_ids" binding:"required"`
+		LinkIds []int64 `json:"link_ids" binding:"required"`
+		TagIds  []int64 `json:"tag_ids" binding:"required"`
 	}
-	if err := ctx.Bind(&body); err != nil {
+	if err := ctx.BindJSON(&body); err != nil {
 		return
 	}
 
 	str := "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES (:tag_id, :link_id)"
 
-	allPairs := []map[string]int{}
+	type IDPair struct {
+		TagId  int64 `db:"tag_id"`
+		LinkId int64 `db:"link_id"`
+	}
+
+	allPairs := make([]IDPair, 0)
 
 	for _, linkId := range body.LinkIds {
 		for _, tagId := range body.TagIds {
-			allPairs = append(allPairs, map[string]int{
-				"tag_id":  tagId,
-				"link_id": linkId,
+			allPairs = append(allPairs, IDPair{
+				TagId:  tagId,
+				LinkId: linkId,
 			})
 		}
 	}
-
 	info, err := db.NamedExec(str, allPairs)
 	utils.Must(err)
-	updatedLinks := utils.MustGet(info.RowsAffected())
 
-	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks})
+	ctx.JSON(http.StatusOK, gin.H{"updated": utils.MustGet(info.RowsAffected())})
 }
 
 func SaveBookmark(ctx *gin.Context) {

@@ -49,3 +49,10 @@
     <slot name="footer" />
   </footer>
 </dialog>
+
+<style>
+  dialog[open=""] {
+    display: flex;
+    flex-direction: column;
+  }
+</style>

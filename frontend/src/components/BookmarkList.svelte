@@ -52,7 +52,7 @@
   });
 
   // Child state
-  let marked: number[] = [];
+  export let marked: number[] = [];
   const toggleMark = (bookmarkID: number) => {
     const index = marked.indexOf(bookmarkID);
     const notPresent = index === -1;
@@ -95,7 +95,14 @@
             toast.push(`Deleted ${res.deleted} bookmarks`);
           }}
         />
-        <BatchActionButton action="TAGS" title="Add Tags" icon={faTags} />
+        <BatchActionButton
+          action="TAGS"
+          title="Add Tags"
+          icon={faTags}
+          handler={async () => {
+            $modals["add-tags"].showModal();
+          }}
+        />
         <BatchActionButton action="FOLDER" title="Move to Folder" icon={faFolderPlus} />
         <hr />
         <span>
@@ -113,7 +120,7 @@
   Error
 {:else if $bookmarks.length > 0}
   {#each $bookmarks as bookmark}
-    <Bookmark {bookmark} {toggleMark} />
+    <Bookmark {bookmark} {toggleMark} checked={marked.includes(bookmark.id)} />
   {/each}
 {:else}
   <div id="not-found">
