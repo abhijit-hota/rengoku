@@ -72,6 +72,20 @@ const createBookmarksStore = () => {
     set,
     subscribe,
     update,
+    init: async () => {
+      try {
+        const res = await api("/bookmarks");
+        set(res.data);
+        stats.set({
+          total: res.total,
+          moreLeft: res.total > 20,
+          page: res.page,
+        });
+      } catch (error) {
+        // TODO
+        set([]);
+      }
+    },
     add: (...newBookmarks: Bookmark[]) => {
       update((bookmarks) => [...bookmarks, ...newBookmarks]);
     },

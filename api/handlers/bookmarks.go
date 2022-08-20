@@ -411,13 +411,21 @@ func ImportBookmarks(ctx *gin.Context) {
 
 	type ExtBookmark struct {
 		BookmarkRes
-		Tags   []string
 		Folder string
 	}
+
 	bookmarks := make([]ExtBookmark, len(parsedLinks))
 	var wg sync.WaitGroup
 
 	for i, v := range parsedLinks {
+		normalisedTags := make([]DB.Tag, 0)
+		for _, tag := range v.Tags {
+			normalisedTags = append(normalisedTags, DB.Tag{
+				ID:   -1,
+				Name: tag,
+			})
+		}
+
 		bm := ExtBookmark{
 			BookmarkRes: BookmarkRes{
 				Bookmark: DB.Bookmark{
@@ -428,8 +436,8 @@ func ImportBookmarks(ctx *gin.Context) {
 					Description: "",
 					Favicon:     v.IconUri,
 				},
+				Tags: normalisedTags,
 			},
-			Tags:   v.Tags,
 			Folder: v.FolderPath,
 		}
 		if shouldFetchMetadata {
@@ -451,26 +459,30 @@ func ImportBookmarks(ctx *gin.Context) {
 
 	db := DB.GetDB()
 	tx := db.MustBegin()
-	for _, bm := range bookmarks {
+	for bmIdx := range bookmarks {
+		bm := &bookmarks[bmIdx]
+
 		stmt := "INSERT OR IGNORE INTO links (url) VALUES (?)"
 		tx.MustExec(stmt, bm.URL)
 
-		stmt = "SELECT id FROM links WHERE url = ?"
-		var linkID int
-		tx.Get(&linkID, stmt, bm.URL)
+		stmt = "SELECT * FROM links WHERE url = ?"
+
+		tx.Get(&bm.Bookmark, stmt, bm.URL)
+		linkID := bm.Bookmark.ID
 
 		stmt = "INSERT OR IGNORE INTO meta (link_id, title, description, favicon) VALUES (?, ?, ?, ?)"
 		tx.MustExec(stmt, linkID, bm.Meta.Title, bm.Meta.Description, bm.Meta.Favicon)
-		for _, tag := range bm.Tags {
+		for tagIdx := range bm.Tags {
+			tag := &bm.Tags[tagIdx]
+
 			stmt := "INSERT OR IGNORE INTO tags (name) VALUES (?)"
-			tx.MustExec(stmt, tag)
+			tx.MustExec(stmt, tag.Name)
 
 			stmt = "SELECT id FROM tags WHERE name = ?"
-			var tagId int
-			tx.Get(&tagId, stmt, tag)
+			tx.Get(&tag.ID, stmt, tag.Name)
 
 			stmt = "INSERT OR IGNORE INTO links_tags (link_id, tag_id) VALUES (?, ?)"
-			tx.MustExec(stmt, linkID, tagId)
+			tx.MustExec(stmt, linkID, tag.ID)
 		}
 
 		var folderID, parentID int
