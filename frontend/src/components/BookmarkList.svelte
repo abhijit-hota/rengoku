@@ -145,7 +145,7 @@
 {:else if fetchingStatus === "ERROR"}
   Error
 {:else if $bookmarks.length > 0}
-  {#each $bookmarks as bookmark}
+  {#each $bookmarks as bookmark (bookmark.id)}
     <Bookmark {bookmark} {toggleMark} checked={marked.includes(bookmark.id)} />
   {/each}
 {:else}
