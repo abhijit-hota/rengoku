@@ -392,10 +392,12 @@ func RefetchMetadata(ctx *gin.Context) {
 	bm.Meta.LinkID = uri.ID
 	bm.FixFavicon()
 
-	tx.MustExec(
+	_, err := tx.NamedExec(
 		"UPDATE meta SET title = :title, description = :description, favicon = :favicon WHERE link_id = :link_id",
 		bm.Meta,
 	)
+	utils.Must(err)
+
 	utils.Must(tx.Commit())
 
 	ctx.JSON(http.StatusOK, bm.Meta)
