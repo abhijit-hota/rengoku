@@ -33,6 +33,7 @@ func AddBookmark(ctx *gin.Context) {
 	}
 
 	tx := db.MustBegin()
+	defer tx.Rollback()
 
 	stmt := "INSERT INTO links (url) VALUES (?) RETURNING *"
 	err = tx.Get(&body.Bookmark, stmt, body.URL)
@@ -382,12 +383,14 @@ func RefetchMetadata(ctx *gin.Context) {
 
 	db := DB.GetDB()
 	tx := db.MustBegin()
+	defer tx.Rollback()
 
 	var bm BookmarkRes
 	utils.Must(
 		tx.Get(&bm.URL, `SELECT url from links WHERE links.id = ?`, uri.ID),
 	)
 
+	//TODO: error
 	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
 	bm.Meta.LinkID = uri.ID
 	bm.FixFavicon()
@@ -461,6 +464,8 @@ func ImportBookmarks(ctx *gin.Context) {
 
 	db := DB.GetDB()
 	tx := db.MustBegin()
+	defer tx.Rollback()
+
 	for bmIdx := range bookmarks {
 		bm := &bookmarks[bmIdx]
 
