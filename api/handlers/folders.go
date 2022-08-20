@@ -17,7 +17,7 @@ type Tree struct {
 }
 
 func transform(leaves []DB.Folder, parentId int64) []Tree {
-	var trees []Tree
+	trees := make([]Tree, 0)
 	for _, leaf := range leaves {
 		if leaf.ParentID == parentId {
 			trees = append(trees, Tree{
@@ -33,7 +33,7 @@ func transform(leaves []DB.Folder, parentId int64) []Tree {
 func GetLinkTree(ctx *gin.Context) {
 	db := DB.GetDB()
 
-	var rows []DB.Folder
+	rows := make([]DB.Folder, 0)
 	err := db.Select(&rows, `SELECT id, name, parent_id FROM folders`)
 	utils.Must(err)
 
