@@ -1,8 +1,8 @@
 package db
 
 type Meta struct {
-	ID          int64  `json:"id"`
-	LinkID      int64  `json:"link_id" db:"link_id"`
+	ID          int64  `json:"id,omitempty"`
+	LinkID      int64  `json:"link_id,omitempty" db:"link_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Favicon     string `json:"favicon"`
