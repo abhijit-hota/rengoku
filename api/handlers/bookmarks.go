@@ -492,6 +492,10 @@ func ImportBookmarks(ctx *gin.Context) {
 			tx.MustExec(stmt, linkID, tag.ID)
 		}
 
+		if bm.Folder == "" {
+			continue
+		}
+
 		var folderID, parentID int
 		for _, folder := range strings.Split(bm.Folder, common.FolderPathSeparator) {
 
