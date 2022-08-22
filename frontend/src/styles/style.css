@@ -67,6 +67,9 @@ dialog {
 .red {
     color: rgb(231, 126, 126);
 }
+.grey {
+    color: #888;
+}
 
 .icon-button {
     line-height: 0;
@@ -115,6 +118,7 @@ dialog {
     /* body-margin-top + line-height * h1-font-size + hr-margin-top + hr-height + hr-margin-bottom + nav-margin-bottom  */
     top: calc(20px + 1.4 * 2.2em + 0.5em + 1px + 0.5em + 1em);
     align-self: start;
+    z-index: 1;
 }
 
 /* Tags */

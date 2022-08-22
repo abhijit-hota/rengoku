@@ -71,6 +71,7 @@
     position: sticky;
     top: 0px;
     background-color: var(--background-body);
+    z-index: 1;
   }
 
   #filters {
