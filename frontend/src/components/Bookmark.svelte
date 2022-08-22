@@ -27,13 +27,7 @@
   };
 </script>
 
-<div
-  class={`bookmark ${checked || hovered ? "active" : ""}`}
-  on:mouseover={activate}
-  on:focus={activate}
-  on:mouseout={deActivate}
-  on:blur={deActivate}
->
+<div id={bookmark.id.toString()} class="bookmark" class:checked>
   <div class="row header-row">
     {#if bookmark.meta.favicon}
       <img class="favicon" src={bookmark.meta.favicon} alt="🔥" />
@@ -125,7 +119,8 @@
     border-radius: 6px;
   }
 
-  .bookmark.active {
+  .bookmark.checked,
+  .bookmark:hover {
     background-color: var(--background-alt);
   }
 
