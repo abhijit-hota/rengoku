@@ -5,25 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --emptyOutDir",
+    "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.30",
-    "@tsconfig/svelte": "^2.0.1",
+    "@sveltejs/vite-plugin-svelte": "^1.0.2",
+    "@tsconfig/svelte": "^3.0.0",
     "@zerodevx/svelte-toast": "^0.7.2",
-    "svelte": "^3.44.0",
-    "svelte-check": "^2.2.7",
-    "svelte-preprocess": "^4.9.8",
+    "svelte": "^3.49.0",
+    "svelte-check": "^2.8.1",
+    "svelte-preprocess": "^4.10.7",
     "tinro": "^0.6.12",
-    "tslib": "^2.3.1",
-    "typescript": "^4.5.4",
-    "vite": "^2.9.9"
+    "tslib": "^2.4.0",
+    "typescript": "^4.7.4",
+    "vite": "^3.0.9"
   },
   "dependencies": {
-    "@fortawesome/free-solid-svg-icons": "^6.1.1",
-    "svelte-fa": "^3.0.2",
-    "svelte-multiselect": "^5.0.2"
+    "@fortawesome/free-solid-svg-icons": "^6.1.2",
+    "javascript-time-ago": "^2.5.7",
+    "svelte-fa": "^3.0.3",
+    "svelte-multiselect": "^5.0.6"
   }
 }

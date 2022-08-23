@@ -12,7 +12,9 @@
   import { toast } from "@zerodevx/svelte-toast";
   import Fa from "svelte-fa";
 
-  import MultiSelect, { ObjectOption } from "svelte-multiselect";
+  import MultiSelect from "svelte-multiselect";
+  import type { ObjectOption } from "svelte-multiselect";
+
   import type { URLAction } from "./SettingsPage.svelte";
 
   export let urlAction: URLAction;

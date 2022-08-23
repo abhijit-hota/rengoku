@@ -8,7 +8,8 @@
 
 <script lang="ts">
   import Fa from "svelte-fa";
-  import { faSpinner, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+  import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
   import { toast } from "@zerodevx/svelte-toast";
 
   export let action: BatchActions;

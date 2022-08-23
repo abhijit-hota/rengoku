@@ -1,5 +1,6 @@
 <script lang="ts">
-  import MultiSelect, { ObjectOption } from "svelte-multiselect";
+  import MultiSelect from "svelte-multiselect";
+  import type { ObjectOption } from "svelte-multiselect";
   import { api, store, errors } from "@lib";
   import Modal, { modals } from "@Modal";
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";

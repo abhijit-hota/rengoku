@@ -18,10 +18,12 @@
 	"settings": {
 		"files.exclude": {
 			"api": true,
+			"frontend-dist": true,
 			"cli": true,
 			"desktop": true,
 			"frontend": true,
+			"saved_pages": true
 		},
-		"cSpell.enabled": false
+		"cSpell.enabled": false,
 	}
 }

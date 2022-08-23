@@ -9,7 +9,9 @@
     faMultiply,
     faTrash,
   } from "@fortawesome/free-solid-svg-icons";
-  import { isParent, Tree, isExpanded } from "./FolderWrapper.svelte";
+  import { isParent, isExpanded } from "./FolderWrapper.svelte";
+  import type { Tree } from "./FolderWrapper.svelte";
+  
   const { queryParams } = store;
 
   export let tree: Tree = [];

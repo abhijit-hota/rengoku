@@ -19,5 +19,9 @@ export default defineConfig({
   },
   build: {
     outDir: "../api/frontend-dist",
+    emptyOutDir: true,
+  },
+  server: {
+    port: 3000,
   },
 });
