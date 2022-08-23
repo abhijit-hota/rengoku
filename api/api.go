@@ -45,9 +45,8 @@ func CreateServer() *gin.Engine {
 	{
 		bookmarkRouter.POST("", handlers.AddBookmark)
 		bookmarkRouter.GET("", handlers.GetBookmarks)
+		bookmarkRouter.PATCH("/:id", handlers.UpdateBookmark)
 
-		bookmarkRouter.PUT("/:id/:property", handlers.AddBookmarkProperty)
-		bookmarkRouter.DELETE("/:id/:property/:propertyId", handlers.DeleteBookmarkProperty)
 		bookmarkRouter.PUT("/tags", handlers.BulkAddBookmarkTags)
 		bookmarkRouter.DELETE("/:id", handlers.DeleteBookmark)
 		bookmarkRouter.DELETE("", handlers.BulkDeleteBookmarks)

@@ -224,68 +224,72 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 	ctx.JSON(http.StatusOK, gin.H{"data": bookmarks, "page": queryParams.Page, "total": fullCount})
 }
 
-func DeleteBookmarkProperty(ctx *gin.Context) {
-	db := DB.GetDB()
-	var uri struct {
-		IdUri
-		Property   string `uri:"property" binding:"required"`
-		PropertyId int    `uri:"propertyId" binding:"required"`
-	}
+func UpdateBookmark(ctx *gin.Context) {
+	var uri IdUri
 
 	if err := ctx.BindUri(&uri); err != nil {
 		return
 	}
+	linkId := uri.ID
 
-	stmt := ""
-	switch uri.Property {
-	case "tag":
-		stmt = "DELETE FROM links_tags WHERE link_id = ? AND tag_id = ?"
-	case "folder":
-		stmt = "DELETE FROM links_folders WHERE link_id = ? AND folder_id = ?"
-	default:
-		ctx.AbortWithStatus(400)
-		return
-	}
-
-	info := db.MustExec(stmt, uri.ID, uri.PropertyId)
-	numDeleted := utils.MustGet(info.RowsAffected())
-
-	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
-}
-
-func AddBookmarkProperty(ctx *gin.Context) {
 	db := DB.GetDB()
-	var uri struct {
-		IdUri
-		Property string `uri:"property"`
-	}
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	var newProperty struct {
-		Id int `json:"id" form:"id" binding:"required"`
+	var updateReq struct {
+		Title       string  `json:"title,omitempty"`
+		Description string  `json:"description,omitempty"`
+		TagIds      []int64 `json:"tag_ids,omitempty"`
+		FolderIds   []int64 `json:"folder_ids,omitempty"`
 	}
+	utils.Must(tx.Get(&updateReq, "SELECT title, description FROM meta WHERE link_id = ?", linkId))
+	utils.Must(tx.Select(&updateReq.TagIds, "SELECT tag_id FROM links_tags WHERE link_id = ?", linkId))
+	utils.Must(tx.Select(&updateReq.FolderIds, "SELECT folder_id FROM links_folders WHERE link_id = ?", linkId))
 
-	if err := ctx.BindUri(&uri); err != nil {
-		return
-	}
-	if err := ctx.Bind(&newProperty); err != nil {
-		return
-	}
-
-	stmt := ""
-	switch uri.Property {
-	case "tag":
-		stmt = "INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)"
-	case "folder":
-		stmt = "INSERT OR IGNORE INTO links_folders (folder_id, link_id) VALUES (?, ?)"
-	default:
-		ctx.AbortWithStatus(400)
+	if err := ctx.BindJSON(&updateReq); err != nil {
 		return
 	}
 
-	info := db.MustExec(stmt, newProperty.Id, uri.ID)
-	updatedLinks := utils.MustGet(info.RowsAffected())
+	tx.MustExec("UPDATE meta SET title = ?, description = ? WHERE link_id = ?", updateReq.Title, updateReq.Description, linkId)
 
-	ctx.JSON(http.StatusOK, gin.H{"added": updatedLinks == 1})
+	type IDPair struct {
+		FolderId int64 `db:"folder_id"`
+		TagId    int64 `db:"tag_id"`
+		LinkId   int64 `db:"link_id"`
+	}
+
+	stmt := "DELETE FROM links_tags WHERE link_id = ?"
+	tx.MustExec(stmt, linkId)
+	if len(updateReq.TagIds) > 0 {
+		tagPairs := make([]IDPair, 0)
+		for _, tagId := range updateReq.TagIds {
+			tagPairs = append(tagPairs, IDPair{
+				TagId:  tagId,
+				LinkId: linkId,
+			})
+		}
+		stmt = "INSERT OR IGNORE INTO links_tags(tag_id, link_id) VALUES (:tag_id, :link_id)"
+		_, err := tx.NamedExec(stmt, tagPairs)
+		utils.Must(err)
+	}
+
+	stmt = "DELETE FROM links_folders WHERE link_id = ?"
+	tx.MustExec(stmt, linkId)
+	if len(updateReq.FolderIds) > 0 {
+		folderPairs := make([]IDPair, 0)
+		for _, folderId := range updateReq.FolderIds {
+			folderPairs = append(folderPairs, IDPair{
+				FolderId: folderId,
+				LinkId:   linkId,
+			})
+		}
+		stmt = "INSERT OR IGNORE INTO links_folders(folder_id, link_id) VALUES (:folder_id, :link_id)"
+		_, err := tx.NamedExec(stmt, folderPairs)
+		utils.Must(err)
+	}
+
+	tx.Commit()
+	ctx.Status(http.StatusOK)
 }
 
 func DeleteBookmark(ctx *gin.Context) {
