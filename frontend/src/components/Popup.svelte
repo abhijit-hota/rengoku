@@ -5,15 +5,22 @@
   let menuOpen = false;
   let focusedID = 0;
   let ref: HTMLUListElement = null;
-  $: {
+  let listItems: HTMLLIElement[] = [];
+
+  const setup = () => {
     if (ref) {
-      const btn = [...ref.children].filter(({ tagName }) => tagName === "LI")[focusedID]
-        .firstElementChild as HTMLButtonElement;
-      btn.focus();
+      listItems = [...ref.getElementsByTagName("li")];
     }
+  };
+
+  $: setup(), ref;
+
+  $: if (listItems.length > 0) {
+    const btn = listItems[focusedID].firstElementChild as HTMLButtonElement;
+    btn.focus();
   }
 
-  //   Temp Props
+  // Temp Props
   export let excludeClicks: string[] = [];
   export let id: string = Math.random().toString();
 </script>
@@ -36,13 +43,12 @@
           if (!(key === "ArrowUp" || key === "ArrowDown")) {
             return;
           }
-
           e.preventDefault();
           if (key === "ArrowDown") {
-            focusedID = (focusedID + 1) % 6;
+            focusedID = (focusedID + 1) % listItems.length;
           } else if (key === "ArrowUp") {
             if (focusedID <= 0) {
-              focusedID = 5;
+              focusedID = listItems.length - 1;
             } else {
               focusedID--;
             }
