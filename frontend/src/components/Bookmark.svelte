@@ -1,5 +1,20 @@
+<script lang="ts" context="module">
+  // TODO: replace time-ago with custom script. It adds 40kB worth of JS!!!
+  import TimeAgo from "javascript-time-ago";
+  import en from "javascript-time-ago/locale/en";
+
+  TimeAgo.addDefaultLocale(en);
+  const timeAgo = new TimeAgo("en-US");
+</script>
+
 <script lang="ts">
+  import { faClockRotateLeft, faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import { toast } from "@zerodevx/svelte-toast";
+  import Fa from "svelte-fa";
+
   import { api, store } from "@lib";
+  const { stats } = store;
+
   import Popup from "./Popup.svelte";
   import { modals } from "@Modal";
 
@@ -9,21 +24,21 @@
 
   export let checked = false;
 
+  let isDeleting = false,
+    isRefetching = false,
+    isSaving = false;
+
   const deleteBookmark = async () => {
     try {
-      const res = await api("/bookmarks/" + bookmark.id, "DELETE");
+      isDeleting = true;
+      await api("/bookmarks/" + bookmark.id, "DELETE");
       store.bookmarks.delete(bookmark.id);
+      $stats.total--;
     } catch (error) {
       console.debug(error);
-    }
-  };
-
-  const activate = () => {
-    hovered = true;
-  };
-  const deActivate = () => {
-    if (!checked) {
-      hovered = false;
+      // TODO: Toast
+    } finally {
+      isDeleting = false;
     }
   };
 </script>
@@ -51,25 +66,59 @@
             <button
               id={"save-offline-button-" + bookmark.id}
               class="no-style"
-              on:click={() => {
-                api("/bookmarks/" + bookmark.id + "/save", "PUT");
-              }}>Save Offline</button
+              disabled={isSaving}
+              style:cursor={isSaving ? "not-allowed" : "pointer"}
+              on:click={async () => {
+                try {
+                  isSaving = true;
+                  const { saved, lastSavedOffline } = await api(
+                    "/bookmarks/" + bookmark.id + "/save",
+                    "PUT"
+                  );
+                  if (saved) {
+                    bookmark.last_saved_offline = lastSavedOffline;
+                    bookmark = bookmark;
+                  }
+                } catch (error) {
+                  console.debug(error);
+                  toast.push("An error occurred while saving the page.");
+                } finally {
+                  isSaving = false;
+                }
+              }}
             >
+              {#if isSaving}
+                <Fa icon={faSpinner} spin color="#888" />
+              {/if}
+              <span style:color={isSaving ? "#888" : "inherit"}> Save Offline </span>
+            </button>
           </li>
           {#if bookmark.last_saved_offline}
             <li role="none">
-              <a
+              <button
                 class="no-style"
-                target="_blank"
-                href={"http://localhost:8080/saved/" + bookmark.id}>Open saved copy</a
+                on:click={(e) => {
+                  e.preventDefault();
+                  window.open("http://localhost:8080/saved/" + bookmark.id);
+                }}
               >
+                Open saved copy
+                <br />
+                <small style="background: unset !important; color: #bbb;">
+                  <Fa icon={faClockRotateLeft} /> Last saved
+                  {timeAgo.format(new Date(bookmark.last_saved_offline * 1000))}
+                </small>
+              </button>
             </li>
           {/if}
           <li role="none">
             <button
               class="no-style"
+              disabled={isRefetching}
+              style:cursor={isRefetching ? "not-allowed" : "pointer"}
               on:click={async () => {
                 try {
+                  isRefetching = true;
                   const /** @type {Bookmark["meta"]}*/ res = await api(
                       "/bookmarks/" + bookmark.id + "/meta",
                       "PUT"
@@ -77,13 +126,30 @@
                   store.bookmarks.updateOne(bookmark.id, { ...bookmark, meta: res });
                 } catch (error) {
                   console.error(error);
+                } finally {
+                  isRefetching = false;
                 }
-              }}>Refetch Metadata</button
+              }}
             >
+              {#if isRefetching}
+                <Fa icon={faSpinner} spin color="#888" />
+              {/if}
+              <span style:color={isRefetching ? "#888" : "inherit"}> Refetch Metadata </span>
+            </button>
           </li>
           <hr />
           <li role="none">
-            <button class="no-style red" on:click={deleteBookmark}>Delete</button>
+            <button
+              class="no-style"
+              on:click={deleteBookmark}
+              disabled={isDeleting}
+              style:cursor={isDeleting ? "not-allowed" : "pointer"}
+            >
+              {#if isDeleting}
+                <Fa icon={faSpinner} spin color="#888" />
+              {/if}
+              <span style:color={isDeleting ? "#888" : "rgb(231, 126, 126)"}> Delete </span>
+            </button>
           </li>
         </svelte:fragment>
       </Popup>

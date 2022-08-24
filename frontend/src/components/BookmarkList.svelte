@@ -7,6 +7,7 @@
   import { modals } from "@Modal";
   import BatchActionButton from "./BatchActionButton.svelte";
   import Fa from "svelte-fa";
+  import AddTagsModal from "./AddTagsModal.svelte";
   import EditBookmarkModal from "./EditBookmarkModal.svelte";
 
   const { bookmarks, queryParams, queryStr, stats } = store;
@@ -53,8 +54,10 @@
   });
 
   // Child state
+  let marked: number[] = [];
   let activeBookmark: number = $bookmarks[0].id;
 
+  const toggleMark = (bookmarkID: number) => {
     const index = marked.indexOf(bookmarkID);
     const notPresent = index === -1;
 
@@ -93,11 +96,8 @@
             const res = await api("/bookmarks", "DELETE", { ids: marked });
             bookmarks.delete(...marked);
             marked = [];
-            $stats = {
-              page: 0,
-              total: 0,
-              moreLeft: false,
-            };
+            $stats.total -= res.deleted;
+            $stats = $stats;
             toast.push(`Deleted ${res.deleted} bookmarks`);
           }}
         />
@@ -118,6 +118,7 @@
           <div>
             <input
               indeterminate={marked.length > 0 && marked.length < $bookmarks.length}
+              checked={marked.length === $bookmarks.length}
               type="checkbox"
               name="Select All"
               class="bookmark-checkbox"
@@ -147,7 +148,12 @@
   Error
 {:else if $bookmarks.length > 0}
   {#each $bookmarks as bookmark (bookmark.id)}
-    <Bookmark {bookmark} {toggleMark} checked={marked.includes(bookmark.id)} />
+      <Bookmark
+        {bookmark}
+        {toggleMark}
+        checked={marked.includes(bookmark.id)}
+        bind:activeBookmark
+      />
   {/each}
 {:else}
   <div id="not-found">
@@ -161,8 +167,15 @@
   <div style="text-align: center;" on:click={() => $queryParams.page++}>
     <button>Load More</button>
   </div>
+{:else}
+  <div style="text-align: center; opacity: 0.5;">
+    <hr />
+    <span style="font-weight: bold;">End of list</span>
+  </div>
 {/if}
 
+<div style="padding-bottom: 10rem;" />
+<AddTagsModal markedBookmarks={marked} />
 <EditBookmarkModal activeBookmarkId={activeBookmark} />
 
 <style>

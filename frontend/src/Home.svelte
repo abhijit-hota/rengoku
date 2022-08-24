@@ -11,9 +11,6 @@
   import { queryParams } from "./lib/stores";
   import { faGear } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
-  import AddTagsModal from "./components/AddTagsModal.svelte";
-
-  let markedBookmarks: number[] = [];
 </script>
 
 <nav>
@@ -53,13 +50,12 @@
   </div>
 </aside>
 <main>
-  <BookmarkList bind:marked={markedBookmarks} />
+  <BookmarkList />
 </main>
 <aside id="filters" class="sticky">
   <Filter />
 </aside>
 <AddBookmarkModal />
-<AddTagsModal {markedBookmarks} />
 <ImportModal />
 <SvelteToast options={{}} />
 
