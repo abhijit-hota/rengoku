@@ -1,11 +1,12 @@
 <script lang="ts">
   import { api, store } from "@lib";
   import Popup from "./Popup.svelte";
+  import { modals } from "@Modal";
 
   export let bookmark: store.Bookmark;
   export let toggleMark: Function;
+  export let activeBookmark: number;
 
-  let hovered = false;
   export let checked = false;
 
   const deleteBookmark = async () => {
@@ -37,10 +38,13 @@
       <Popup id={bookmark.id.toString()} excludeClicks={["#save-offline-button-" + bookmark.id]}>
         <svelte:fragment slot="list-items">
           <li role="none">
-            <button class="no-style">Edit tags</button>
-          </li>
-          <li role="none">
-            <button class="no-style">Edit folders</button>
+            <button
+              class="no-style"
+              on:click={() => {
+                activeBookmark = bookmark.id;
+                $modals["edit-bookmark"].showModal();
+              }}>Edit</button
+            >
           </li>
           <hr />
           <li role="none">

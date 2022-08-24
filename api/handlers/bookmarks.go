@@ -236,12 +236,13 @@ func UpdateBookmark(ctx *gin.Context) {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
-	var updateReq struct {
+	type UpdateReq struct {
 		Title       string  `json:"title,omitempty"`
 		Description string  `json:"description,omitempty"`
 		TagIds      []int64 `json:"tag_ids,omitempty"`
 		FolderIds   []int64 `json:"folder_ids,omitempty"`
 	}
+	updateReq := UpdateReq{}
 	utils.Must(tx.Get(&updateReq, "SELECT title, description FROM meta WHERE link_id = ?", linkId))
 	utils.Must(tx.Select(&updateReq.TagIds, "SELECT tag_id FROM links_tags WHERE link_id = ?", linkId))
 	utils.Must(tx.Select(&updateReq.FolderIds, "SELECT folder_id FROM links_folders WHERE link_id = ?", linkId))
@@ -288,8 +289,15 @@ func UpdateBookmark(ctx *gin.Context) {
 		utils.Must(err)
 	}
 
+	var updatedBookmark struct {
+		UpdateReq
+		LastUpdated int64 `json:"last_updated" db:"last_updated"`
+	}
+	updatedBookmark.UpdateReq = updateReq
+	utils.Must(tx.Get(&updatedBookmark.LastUpdated, "SELECT last_updated FROM links WHERE id = ?", linkId))
+
 	tx.Commit()
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusOK, updatedBookmark)
 }
 
 func DeleteBookmark(ctx *gin.Context) {

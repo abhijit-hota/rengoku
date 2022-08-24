@@ -8,10 +8,10 @@
   import SettingsPage from "./components/SettingsPage.svelte";
   import { store } from "@lib";
 
-  const { tags } = store;
+  const { tags, bookmarks } = store;
 </script>
 
-{#await tags.init() then}
+{#await Promise.all([tags.init(), bookmarks.init()]) then}
   <Route path="/">
     <Home />
   </Route>

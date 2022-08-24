@@ -7,6 +7,7 @@
   import { modals } from "@Modal";
   import BatchActionButton from "./BatchActionButton.svelte";
   import Fa from "svelte-fa";
+  import EditBookmarkModal from "./EditBookmarkModal.svelte";
 
   const { bookmarks, queryParams, queryStr, stats } = store;
 
@@ -52,8 +53,8 @@
   });
 
   // Child state
-  export let marked: number[] = [];
-  const toggleMark = (bookmarkID: number) => {
+  let activeBookmark: number = $bookmarks[0].id;
+
     const index = marked.indexOf(bookmarkID);
     const notPresent = index === -1;
 
@@ -161,6 +162,8 @@
     <button>Load More</button>
   </div>
 {/if}
+
+<EditBookmarkModal activeBookmarkId={activeBookmark} />
 
 <style>
   #not-found {
