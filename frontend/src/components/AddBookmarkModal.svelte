@@ -23,6 +23,8 @@
     if (newTags.length > 0) {
       try {
         const res = await api("/tags/bulk", "POST", { names: newTags.map(({ value }) => value) });
+
+        tags.add(...res);
         selectedTags = [
           ...selectedTags.filter((tag) => !isNewTag(tag)),
           ...res.map(({ id, name }) => ({ label: name, value: id })),
@@ -111,8 +113,12 @@
     class="w-full"
     disabled={status === "SUBMITTING"}
     on:click={addBookmark}
-    on:keydown|preventDefault|stopPropagation={(e) => {
-      if (e.key === " " || e.key === "Enter") addBookmark();
+    on:keydown={(e) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        addBookmark();
+      }
     }}
     style="margin: 1em 0;"
   >
