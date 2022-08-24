@@ -379,12 +379,16 @@ func SaveBookmark(ctx *gin.Context) {
 	var bm DB.Bookmark
 	utils.Must(tx.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
 
-	common.SavePage(bm.URL, fmt.Sprint(uri.ID))
+	if err := common.SavePage(bm.URL, fmt.Sprint(uri.ID)); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"saved": false})
+		return
+	}
 
-	tx.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", time.Now().Unix(), uri.ID)
+	savedTs := time.Now().Unix()
+	tx.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", savedTs, uri.ID)
 
 	utils.Must(tx.Commit())
-	ctx.JSON(http.StatusOK, gin.H{"saved": true})
+	ctx.JSON(http.StatusOK, gin.H{"saved": true, "lastSavedOffline": savedTs})
 }
 
 func RefetchMetadata(ctx *gin.Context) {
