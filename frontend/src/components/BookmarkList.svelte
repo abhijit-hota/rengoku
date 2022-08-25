@@ -55,7 +55,7 @@
 
   // Child state
   let marked: number[] = [];
-  let activeBookmark: number = $bookmarks[0].id;
+  let activeBookmark: number;
 
   const toggleMark = (bookmarkID: number) => {
     const index = marked.indexOf(bookmarkID);

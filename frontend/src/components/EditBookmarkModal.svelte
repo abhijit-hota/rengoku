@@ -15,14 +15,32 @@
   let selectedFolders = [];
 
   export let activeBookmarkId: number;
-  let bookmark: Bookmark = $bookmarks[0];
+  let bookmark: Bookmark;
 
-  const setBookmarkAndTags = (activeId: number) => {
-    bookmark = $bookmarks.find(({ id }) => id === activeId);
-    selectedTags = bookmark?.tags.map(({ id, name }) => ({ label: name, value: id }));
+  let updateState: {
+    title?: string;
+    description?: string;
+    tag_ids?: number[];
+    folder_ids?: number[];
+  } = {
+    title: "",
+    description: "",
+    tag_ids: [],
+    folder_ids: [],
   };
 
-  $: setBookmarkAndTags(activeBookmarkId);
+  const setBookmarkAndTags = () => {
+    bookmark = $bookmarks.find(({ id }) => id === activeBookmarkId);
+    selectedTags = bookmark?.tags.map(({ id, name }) => ({ label: name, value: id }));
+    updateState = {
+      title: bookmark.meta.title,
+      description: bookmark.meta.description,
+      tag_ids: bookmark.tags.map(({ id }) => id),
+      folder_ids: [],
+    };
+  };
+
+  $: if (activeBookmarkId) setBookmarkAndTags();
 
   const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
   const updateBookmark = async () => {
@@ -50,8 +68,8 @@
     }
 
     const dataToPost = {
-      title: bookmark.meta.title,
-      description: bookmark.meta.description,
+      title: updateState.title,
+      description: updateState.description,
       tag_ids: selectedTags.map(({ value }) => value),
       folder_ids: selectedFolders.map(({ value }) => value),
     };
@@ -89,7 +107,7 @@
       <input
         autofocus
         type="text"
-        bind:value={bookmark.meta.title}
+        bind:value={updateState.title}
         placeholder="Title"
         name="title"
         id="title"
@@ -100,7 +118,7 @@
     <div class="col m-b-1">
       <label for="description"><strong>Description</strong></label>
       <textarea
-        bind:value={bookmark.meta.description}
+        bind:value={updateState.description}
         placeholder="Description"
         name="description"
         id="description"
