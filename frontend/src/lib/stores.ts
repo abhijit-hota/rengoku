@@ -132,5 +132,25 @@ const createTagsStore = () => {
   };
 };
 
+
+const createAuthStore = () => {
+  const { set, subscribe } = writable({
+    loggedIn: !!window.localStorage.getItem("AUTH_TOKEN"),
+    token: "",
+  });
+  return {
+    subscribe,
+    login: (token: string) => {
+      window.localStorage.setItem("AUTH_TOKEN", token);
+      set({ loggedIn: true, token });
+    },
+    logout: () => {
+      window.localStorage.removeItem("AUTH_TOKEN");
+      set({ loggedIn: false, token: "" });
+    },
+  };
+};
+
 export const bookmarks = createBookmarksStore();
 export const tags = createTagsStore();
+export const auth = createAuthStore();

@@ -8,8 +8,8 @@
   import { modals } from "@Modal";
   import { Filter, BookmarkList, AddBookmarkModal, ImportModal } from "@components";
   import FolderWrapper from "./components/FolderWrapper.svelte";
-  import { queryParams } from "./lib/stores";
-  import { faGear } from "@fortawesome/free-solid-svg-icons";
+  import { auth, queryParams } from "./lib/stores";
+  import { faGear, faPowerOff } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
 </script>
 
@@ -26,6 +26,9 @@
       }}
     >
       <Fa icon={faGear} /> Settings
+    </button>
+    <button on:click={auth.logout}>
+      <Fa icon={faPowerOff} /> Log Out
     </button>
   </div>
   <hr />

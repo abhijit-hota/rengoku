@@ -2,20 +2,54 @@
   import "./styles/water.min.css";
   import "./styles/style.css";
 
-  import { Route } from "tinro";
+  import { Route, router } from "tinro";
 
   import Home from "./Home.svelte";
   import SettingsPage from "./components/SettingsPage.svelte";
   import { store } from "@lib";
+  import Loader from "./components/Loader.svelte";
+  import LoginPage from "./components/LoginPage.svelte";
 
-  const { tags, bookmarks } = store;
+  const { tags, bookmarks, folders, auth } = store;
+
+  let loading = true;
+
+  const handleLogin = async () => {
+    if ($auth.loggedIn) {
+      Promise.all([tags.init(), bookmarks.init(), folders.init()]).then(() => {
+        loading = false;
+        router.goto("/");
+      });
+    } else {
+      router.goto("/login");
+    }
+  };
+
+  $: handleLogin(), $auth.loggedIn;
 </script>
 
-{#await Promise.all([tags.init(), bookmarks.init()]) then}
+{#if !$auth.loggedIn}
+  <Route path="/login">
+    <LoginPage />
+  </Route>
+{:else if loading}
+  <div id="full-body-loader-wrapper">
+    <Loader size="4x" />
+  </div>
+{:else}
   <Route path="/">
     <Home />
   </Route>
   <Route path="/settings/*">
     <SettingsPage />
   </Route>
-{/await}
+{/if}
+
+<style>
+  #full-body-loader-wrapper {
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    transform: translate(50%, -50%);
+  }
+</style>

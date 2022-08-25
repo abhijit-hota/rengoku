@@ -11,6 +11,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func TokenAuthMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if ctx.Request.URL.Path == "/api/auth/login" {
+			ctx.Next()
+			return
+		}
+		var header struct {
+			Token string `header:"Authorization"`
+		}
+		if err := ctx.BindHeader(&header); err != nil {
+			return
+		}
+		if !strings.HasPrefix(header.Token, "Bearer ") {
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		token := strings.Split(header.Token, " ")[1]
+
+		if token != os.Getenv("TOKEN") {
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		ctx.Next()
+	}
+}
+
 func CreateServer() *gin.Engine {
 	router := gin.Default()
 
@@ -41,6 +69,14 @@ func CreateServer() *gin.Engine {
 	})
 
 	apiRouter := router.Group("/api")
+	apiRouter.Use(TokenAuthMiddleware())
+
+	authRouter := apiRouter.Group("/auth")
+	{
+		authRouter.POST("/login", handlers.LogIn)
+		authRouter.POST("/logout", handlers.LogIn)
+	}
+
 	bookmarkRouter := apiRouter.Group("/bookmarks")
 	{
 		bookmarkRouter.POST("", handlers.AddBookmark)
