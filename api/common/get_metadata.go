@@ -115,5 +115,8 @@ func GetMetadata(link string) (*DB.Meta, error) {
 	hm := &DB.Meta{}
 	crawl(headNode, hm)
 
+	hm.Title = strings.TrimSpace(strings.ReplaceAll(hm.Title, "\n", ""))
+	hm.Description = strings.TrimSpace(hm.Description)
+
 	return hm, nil
 }
