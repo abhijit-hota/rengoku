@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -42,9 +43,10 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 func CreateServer() *gin.Engine {
 	router := gin.Default()
 
+	assets := utils.MustGet(fs.Sub(distFolder, "frontend-dist/assets"))
 	router.StaticFS("assets", http.FS(assets))
 	router.GET("/", func(ctx *gin.Context) {
-		html := utils.MustGet(Assets.Open("frontend-dist/index.html"))
+		html := utils.MustGet(distFolder.Open("frontend-dist/index.html"))
 		defer html.Close()
 		rd := bufio.NewReader(html)
 		rd.WriteTo(ctx.Writer)

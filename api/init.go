@@ -29,6 +29,7 @@ func GetRengokuPath() string {
 
 func Instantiate(rengokuPath string) {
 	err := os.MkdirAll(rengokuPath, os.ModePerm)
+	utils.Must(err)
 
 	// Create .init file
 	initFile, err := os.OpenFile(rengokuPath+rengokuInit, CREATE_NEW, os.ModePerm)
