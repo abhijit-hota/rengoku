@@ -31,7 +31,7 @@ func (u URLAction) Match(urlStr string) bool {
 		Must(err)
 		hostname := parsed.Hostname()
 		levels := strings.Split(hostname, ".")
-		domain := levels[len(levels)-1] + "." + levels[len(levels)-2]
+		domain := levels[len(levels)-2] + "." + levels[len(levels)-1]
 		return domain == u.Pattern
 	case "starts_with":
 		fallthrough
