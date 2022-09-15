@@ -47,9 +47,17 @@ func AddBookmark(ctx *gin.Context) {
 		panic(err)
 	}
 
-	meta := make(chan DB.Meta)
+	metaChan := make(chan DB.Meta)
 	go func() {
-		meta <- *utils.MustGet(common.GetMetadata(body.URL))
+		meta, err := common.GetMetadata(body.URL)
+		if err != nil {
+			if err.Error() != "not html" {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong."})
+			}
+			close(metaChan)
+			return
+		}
+		metaChan <- *meta
 	}()
 
 	config := utils.GetConfig()
@@ -87,7 +95,7 @@ func AddBookmark(ctx *gin.Context) {
 	}
 
 	stmt = "INSERT INTO meta (title, description, favicon, link_id) VALUES (:title, :description, :favicon, :link_id)"
-	bm.Meta = <-meta
+	bm.Meta = <-metaChan
 	bm.FixFavicon()
 	bm.Meta.LinkID = body.ID
 	_, err = tx.NamedExec(stmt, bm.Meta)
@@ -406,12 +414,19 @@ func RefetchMetadata(ctx *gin.Context) {
 		tx.Get(&bm.URL, `SELECT url from links WHERE links.id = ?`, uri.ID),
 	)
 
-	//TODO: error
-	bm.Meta = *utils.MustGet(common.GetMetadata(bm.URL))
+	meta, err := common.GetMetadata(bm.URL)
+	if err != nil {
+		if err.Error() != "not html" {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong."})
+			return
+		}
+	} else {
+		bm.Meta = *meta
+	}
 	bm.Meta.LinkID = uri.ID
 	bm.FixFavicon()
 
-	_, err := tx.NamedExec(
+	_, err = tx.NamedExec(
 		"UPDATE meta SET title = :title, description = :description, favicon = :favicon WHERE link_id = :link_id",
 		bm.Meta,
 	)
