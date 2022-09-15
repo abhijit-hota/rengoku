@@ -389,6 +389,40 @@ func BulkDeleteBookmarks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted})
 }
 
+func BulkCopyToFolders(ctx *gin.Context) {
+	db := DB.GetDB()
+
+	var body struct {
+		LinkIds   []int64 `json:"link_ids" binding:"required"`
+		FolderIds []int64 `json:"folder_ids" binding:"required"`
+	}
+	if err := ctx.BindJSON(&body); err != nil {
+		return
+	}
+
+	str := "INSERT OR IGNORE INTO links_folders(folder_id, link_id) VALUES (:folder_id, :link_id)"
+
+	type IDPair struct {
+		FolderId int64 `db:"folder_id"`
+		LinkId   int64 `db:"link_id"`
+	}
+
+	allPairs := make([]IDPair, 0)
+
+	for _, linkId := range body.LinkIds {
+		for _, folderId := range body.FolderIds {
+			allPairs = append(allPairs, IDPair{
+				FolderId: folderId,
+				LinkId:   linkId,
+			})
+		}
+	}
+	info, err := db.NamedExec(str, allPairs)
+	utils.Must(err)
+
+	ctx.JSON(http.StatusOK, gin.H{"updated": utils.MustGet(info.RowsAffected())})
+}
+
 func BulkAddBookmarkTags(ctx *gin.Context) {
 	db := DB.GetDB()
 

@@ -9,6 +9,7 @@
   import Fa from "svelte-fa";
   import AddTagsModal from "./AddTagsModal.svelte";
   import EditBookmarkModal from "./EditBookmarkModal.svelte";
+  import MoveToFolderModal from "./MoveToFolderModal.svelte";
 
   const { bookmarks, queryParams, queryStr, stats } = store;
 
@@ -109,7 +110,14 @@
             $modals["add-tags"].showModal();
           }}
         />
-        <BatchActionButton action="FOLDER" title="Move to Folder" icon={faFolderPlus} />
+        <BatchActionButton
+          action="FOLDER"
+          title="Move to Folder"
+          icon={faFolderPlus}
+          handler={async () => {
+            $modals["add-folders"].showModal();
+          }}
+        />
         <hr />
         <div style="display: flex; justify-content: space-between;">
           <div>
@@ -176,6 +184,7 @@
 
 <div style="padding-bottom: 10rem;" />
 <AddTagsModal markedBookmarks={marked} />
+<MoveToFolderModal markedBookmarks={marked} />
 <EditBookmarkModal activeBookmarkId={activeBookmark} />
 
 <style>
