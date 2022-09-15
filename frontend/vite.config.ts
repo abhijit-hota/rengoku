@@ -15,6 +15,7 @@ export default defineConfig({
       "@components": path.resolve(__dirname, "./src/components"),
       "@lib": path.resolve(__dirname, "./src/lib"),
       "@Modal": path.resolve(__dirname, "./src/components/Modal.svelte"),
+      "@utils/dev": path.resolve(__dirname, "./src/lib/dev-utils"),
     },
   },
   build: {

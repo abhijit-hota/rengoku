@@ -11,13 +11,13 @@
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";
   import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
   import { toast } from "@zerodevx/svelte-toast";
+  import { sleep } from "@utils/dev";
 
   export let action: BatchActions;
   export let props: any = {};
   export let icon: IconDefinition;
   export let title: string;
 
-  const sleep = (ms: number = 1000) => new Promise((resolve) => setTimeout(resolve, ms));
   export let handler: () => Promise<unknown> = sleep;
 </script>
 

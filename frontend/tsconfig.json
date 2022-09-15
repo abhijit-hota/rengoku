@@ -25,6 +25,9 @@
       "@Modal": [
         "src/components/Modal.svelte"
       ],
+      "@utils/dev": [
+        "src/lib/dev-utils.ts"
+      ],
     }
   },
   "include": [
