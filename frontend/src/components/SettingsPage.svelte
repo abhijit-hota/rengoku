@@ -16,9 +16,12 @@
   import { onMount } from "svelte";
 
   import { api } from "@lib";
-  import { Route, active } from "tinro";
+  import { Route, active, router } from "tinro";
   import UrlAction from "./URLAction.svelte";
   import NewUrlAction from "./NewURLAction.svelte";
+  import Fa from "svelte-fa";
+  import { faArrowLeft, faBackward, faHome } from "@fortawesome/free-solid-svg-icons";
+  import { toast } from "@zerodevx/svelte-toast";
 
   let config: Config = {
     shouldSaveOffline: false,
@@ -45,6 +48,13 @@
 
 <nav>
   <div class="row">
+    <button
+      on:click={() => {
+        router.goto("/");
+      }}
+    >
+      <Fa icon={faArrowLeft} /> Home</button
+    >
     <h1>Rengoku Settings</h1>
   </div>
   <hr />
@@ -53,13 +63,16 @@
 <div class="setting-wrapper">
   <aside id="menu" role="menu">
     <a href="/settings/account" use:active data-active-class="active-menu">My Account</a>
-    <a href="/settings/app" use:active data-active-class="active-menu">App Settings</a>
+    <a href="/settings/global" use:active data-active-class="active-menu">Global Settings</a>
     <a href="/settings/url-actions" use:active data-active-class="active-menu">URL Actions</a>
     <a href="/settings/ui" use:active data-active-class="active-menu">UI Settings</a>
   </aside>
 
   <div id="setting-content" class="col">
-    <Route path="/app">
+    <Route path="/account">Coming Soon</Route>
+    <Route path="/ui">Coming Soon</Route>
+
+    <Route path="/global">
       <div class="row m-b-2">
         <h3>Save pages offline</h3>
         <input

@@ -40,6 +40,7 @@
   <Route path="/">
     <Home />
   </Route>
+  <Route path="/settings" redirect="/settings/account" />
   <Route path="/settings/*">
     <SettingsPage />
   </Route>
