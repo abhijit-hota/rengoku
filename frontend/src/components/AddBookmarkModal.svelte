@@ -5,6 +5,7 @@
   import Modal, { modals } from "@Modal";
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
+  import FolderSelect from "./FolderSelect.svelte";
 
   const { tags } = store;
 
@@ -12,7 +13,7 @@
   let message: string;
   let url: string;
   let selectedTags: ObjectOption[] = [];
-  let selectedFolders = [];
+  let selectedFolder: Number;
 
   const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
 
@@ -45,7 +46,7 @@
     const dataToPost = {
       url,
       tags: selectedTags.map(({ value }) => value),
-      folders: selectedFolders.map(({ value }) => value),
+      folders: [selectedFolder],
     };
     try {
       const newBookmark = await api("/bookmarks", "POST", dataToPost);
@@ -94,18 +95,8 @@
 
     <div class="col m-b-1">
       <label for="folders"><strong>Folder</strong></label>
-      {#await api("/folders") then folders}
-        {#if folders.length > 0}
-          <MultiSelect
-            inputClass="input-like"
-            outerDivClass="color-fix"
-            options={folders.map(({ id, name }) => ({ label: name, value: id }))}
-            bind:selected={selectedFolders}
-          />
-        {:else}
-          No folders found. Please create from sidebar.
-        {/if}
-      {/await}
+      <!-- TODO: folders tree input -->
+      <FolderSelect bind:selectedFolderId={selectedFolder} />
     </div>
 
     {#if status === "ERROR"}
