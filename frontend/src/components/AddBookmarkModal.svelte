@@ -15,9 +15,13 @@
   let selectedFolders = [];
 
   const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
+
   const addBookmark = async () => {
     status = "SUBMITTING";
 
+    selectedTags = selectedTags.map((tag) =>
+      typeof tag === "string" ? { label: tag, value: tag } : tag
+    );
     const newTags = selectedTags.filter(isNewTag);
 
     if (newTags.length > 0) {
