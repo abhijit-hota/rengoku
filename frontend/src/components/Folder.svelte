@@ -20,10 +20,12 @@
   let newFolder = "";
   let updatedFolderName: Record<number, string> = {};
 
-  tree.forEach(({ id, children }) => {
-    $isParent[id] = (children?.length ?? 0) > 0;
-  });
-  tree.sort(({ children }) => (children ? -1 : 1));
+  $: {
+    tree.forEach(({ id, children }) => {
+      $isParent[id] = (children?.length ?? 0) > 0;
+    });
+    tree.sort(({ children }) => (children ? -1 : 1));
+  }
 </script>
 
 <ul>

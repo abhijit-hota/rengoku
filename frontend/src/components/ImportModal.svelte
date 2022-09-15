@@ -2,7 +2,7 @@
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
   import { api, store } from "@lib";
-  const { bookmarks, tags } = store;
+  const { bookmarks, tags, folders } = store;
 
   import Modal, { modals } from "@Modal";
   import { toast } from "@zerodevx/svelte-toast";
@@ -20,6 +20,7 @@
       const res = await api("/bookmarks/import", "POST", new FormData(formElem));
       bookmarks.init();
       tags.init();
+      folders.init();
       status = "SUCCESS";
       const end = Date.now();
       const duration = ((end - start) / 1000).toPrecision(2);
