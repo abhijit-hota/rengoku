@@ -65,6 +65,8 @@ export type Tag = {
   last_updated: number;
 };
 
+export type Tree = { id?: number; name?: string; children?: Tree }[];
+
 const createBookmarksStore = () => {
   const bookmarks = writable<Bookmark[]>([]);
   const { set, subscribe, update } = bookmarks;
@@ -132,6 +134,33 @@ const createTagsStore = () => {
   };
 };
 
+const createFolderStore = () => {
+  const folders = writable<Tree>([]);
+  const { set, subscribe, update } = folders;
+  return {
+    subscribe,
+    init: async () => {
+      try {
+        const res = await api("/folders/tree");
+        set(res);
+      } catch (error) {
+        // TODO
+        set([]);
+      }
+    },
+    // add: (...newTags: Tag[]) => {
+    //   update((tags) => [...tags, ...newTags]);
+    // },
+    // delete: (...ids: Tag["id"][]) => {
+    //   update((tags) => {
+    //     return tags.filter(({ id }) => !ids.includes(id));
+    //   });
+    // },
+    // updateOne: (id: Tag["id"], updatedTag: Tag) => {
+    //   update((tags) => tags.map((tag) => (tag.id === id ? { ...tag, ...updatedTag } : tag)));
+    // },
+  };
+};
 
 const createAuthStore = () => {
   const { set, subscribe } = writable({
@@ -154,3 +183,4 @@ const createAuthStore = () => {
 export const bookmarks = createBookmarksStore();
 export const tags = createTagsStore();
 export const auth = createAuthStore();
+export const folders = createFolderStore();
