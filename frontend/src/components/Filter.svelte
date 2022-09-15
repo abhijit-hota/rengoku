@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { api, store } from "@lib";
+  import { store } from "@lib";
   const { queryParams, tags } = store;
+  import { modals } from "@Modal";
 
   import MultiSelect from "svelte-multiselect";
   let selectedTags = [];
@@ -42,24 +43,21 @@
 </div>
 
 <div class="row m-b-1">
-  <strong>FILTER BY TAGS</strong>
+  <strong>TAGS</strong>
   <button
     class="m-l-auto"
     style="margin-right: 0;"
-    disabled={$queryParams.tags.length === 0}
     on:click={() => {
-      selectedTags = [];
-      $queryParams.tags = [];
+      $modals["all-tags"].showModal();
     }}
   >
-    Clear
+    Edit Tags
   </button>
 </div>
 <MultiSelect
   inputClass="input-like"
-  placeholder="Search tags"
-  removeAllTitle="Clear all tags"
-  outerDivClass="color-fix filter-tags"
+  placeholder="Search by tags"
+  outerDivClass="color-fix"
   options={$tags.map(({ id, name }) => ({ label: name, value: id }))}
   bind:selected={selectedTags}
 />

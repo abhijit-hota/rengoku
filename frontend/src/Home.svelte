@@ -11,6 +11,7 @@
   import { auth, queryParams } from "./lib/stores";
   import { faGear, faPowerOff } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
+  import AllTagsModal from "./components/AllTagsModal.svelte";
 </script>
 
 <nav>
@@ -58,6 +59,7 @@
 <aside id="filters" class="sticky">
   <Filter />
 </aside>
+<AllTagsModal />
 <AddBookmarkModal />
 <ImportModal />
 <SvelteToast options={{}} />
