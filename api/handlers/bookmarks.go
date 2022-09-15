@@ -167,8 +167,10 @@ func GetBookmarks(ctx *gin.Context) {
 
 	dbQuery := `
 SELECT links.id, links.url, links.created_at, links.last_updated, links.last_saved_offline,
-	   IFNULL(GROUP_CONCAT(tags.id || "=" || tags.name), ""),
-	   meta.title, meta.favicon, meta.description, COUNT(1) OVER() AS full_count
+	   IFNULL(GROUP_CONCAT(DISTINCT(tags.id || "=" || tags.name)), ""), 
+	   IFNULL(GROUP_CONCAT(DISTINCT(folders.id)), ""),
+	   meta.title, meta.favicon, meta.description, 
+	   COUNT(1) OVER() AS full_count
 FROM links 
 LEFT JOIN meta ON meta.link_id = links.id 
 LEFT JOIN links_folders ON links_folders.link_id = links.id 
@@ -222,6 +224,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 	for rows.Next() {
 		var bm BookmarkRes
 		var tagStr string
+		var folderStr string
 		err = rows.Scan(
 			&bm.Bookmark.ID,
 			&bm.URL,
@@ -229,6 +232,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 			&bm.LastUpdated,
 			&bm.LastSavedOffline,
 			&tagStr,
+			&folderStr,
 			&bm.Meta.Title,
 			&bm.Meta.Favicon,
 			&bm.Meta.Description,
@@ -246,6 +250,14 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 					Name: str[1],
 				}
 				bm.Tags = append(bm.Tags, tag)
+			}
+		}
+		if folderStr == "" {
+			bm.Folders = []int64{}
+		} else {
+			keyVals := strings.Split(folderStr, ",")
+			for _, folderId := range keyVals {
+				bm.Folders = append(bm.Folders, int64(utils.MustGet(strconv.Atoi(folderId))))
 			}
 		}
 		bookmarks = append(bookmarks, bm)

@@ -13,10 +13,12 @@ type BookmarkReq struct {
 	TagIds    []int64 `json:"tags"`
 	FolderIds []int64 `json:"folders"`
 }
+
 type BookmarkRes struct {
 	DB.Bookmark
 	DB.Meta `json:"meta"`
 	Tags    []DB.Tag `json:"tags"`
+	Folders []int64  `json:"folders"`
 }
 
 func (bm *BookmarkRes) FixFavicon() {

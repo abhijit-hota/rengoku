@@ -1,4 +1,6 @@
 import { writable, derived } from "svelte/store";
+import type { Writable } from "svelte/store";
+
 import api from "./api";
 
 export const queryParams = writable({
@@ -56,6 +58,7 @@ export type Bookmark = {
     created_at: number;
     last_updated: number;
   }[];
+  folders: number[];
 };
 
 export type Tag = {
@@ -136,6 +139,29 @@ const createTagsStore = () => {
 
 const createFolderStore = () => {
   const folders = writable<Tree>([]);
+  const flattened = derived<Writable<Tree>, { id: number; label: string }[]>(
+    folders,
+    (tree, set) => {
+      const res: { id: number; label: string }[] = [];
+
+      const rec = (tree: Tree, parentLabel: string = "") => {
+        tree.forEach(({ children, id, name }) => {
+          const currentLabel = parentLabel + name + "/";
+
+          res.push({
+            label: currentLabel,
+            id,
+          });
+          if ((children?.length ?? 0) > 0) {
+            rec(children, currentLabel);
+          }
+        });
+      };
+
+      rec(tree);
+      set(res);
+    }
+  );
   const { set, subscribe, update } = folders;
   return {
     subscribe,
@@ -148,6 +174,7 @@ const createFolderStore = () => {
         set([]);
       }
     },
+    flattened,
     // add: (...newTags: Tag[]) => {
     //   update((tags) => [...tags, ...newTags]);
     // },

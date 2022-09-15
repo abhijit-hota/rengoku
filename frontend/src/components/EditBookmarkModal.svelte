@@ -7,12 +7,12 @@
   import Fa from "svelte-fa";
   import type { Bookmark } from "../lib/stores";
 
-  const { tags, bookmarks } = store;
-
+  const { tags, bookmarks, folders } = store;
+  const { flattened } = folders;
   let status: string;
   let message: string;
   let selectedTags: ObjectOption[] = [];
-  let selectedFolders = [];
+  let selectedFolders: ObjectOption[] = [];
 
   export let activeBookmarkId: number;
   let bookmark: Bookmark;
@@ -32,11 +32,16 @@
   const setBookmarkAndTags = () => {
     bookmark = $bookmarks.find(({ id }) => id === activeBookmarkId);
     selectedTags = bookmark?.tags.map(({ id, name }) => ({ label: name, value: id }));
+    selectedFolders = bookmark?.folders.map((id) => ({
+      label: $flattened.find(({ id: _id }) => id === _id)?.label || "",
+      value: id,
+    }));
+
     updateState = {
       title: bookmark.meta.title,
       description: bookmark.meta.description,
       tag_ids: bookmark.tags.map(({ id }) => id),
-      folder_ids: [],
+      folder_ids: bookmark.folders,
     };
   };
 
@@ -135,6 +140,17 @@
         addOptionMsg="+ Create new tag"
         options={$tags.map(({ id, name }) => ({ label: name, value: id }))}
         bind:selected={selectedTags}
+      />
+    </div>
+
+    <div class="col m-b-1">
+      <label for="folders"><strong>Folder</strong></label>
+      <MultiSelect
+        inputClass="input-like"
+        outerDivClass="color-fix"
+        maxSelect={1}
+        options={$flattened.map(({ id, label }) => ({ label, value: id }))}
+        bind:selected={selectedFolders}
       />
     </div>
 

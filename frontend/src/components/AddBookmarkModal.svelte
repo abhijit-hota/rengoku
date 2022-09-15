@@ -5,15 +5,15 @@
   import Modal, { modals } from "@Modal";
   import { faSpinner } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
-  import FolderSelect from "./FolderSelect.svelte";
 
-  const { tags } = store;
+  const { tags, folders } = store;
+  const { flattened } = folders;
 
   let status: string;
   let message: string;
   let url: string;
   let selectedTags: ObjectOption[] = [];
-  let selectedFolder: Number;
+  let selectedFolders: ObjectOption[] = [];
 
   const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
 
@@ -46,7 +46,7 @@
     const dataToPost = {
       url,
       tags: selectedTags.map(({ value }) => value),
-      folders: [selectedFolder],
+      folders: selectedFolders.map(({ value }) => value),
     };
     try {
       const newBookmark = await api("/bookmarks", "POST", dataToPost);
@@ -96,7 +96,14 @@
     <div class="col m-b-1">
       <label for="folders"><strong>Folder</strong></label>
       <!-- TODO: folders tree input -->
-      <FolderSelect bind:selectedFolderId={selectedFolder} />
+      <MultiSelect
+        inputClass="input-like"
+        outerDivClass="color-fix"
+        maxSelect={1}
+        options={$flattened.map(({ id, label }) => ({ label, value: id }))}
+        bind:selected={selectedFolders}
+      />
+      <!-- <FolderSelect bind:selectedFolderId={selectedFolder} /> -->
     </div>
 
     {#if status === "ERROR"}
