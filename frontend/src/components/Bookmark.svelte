@@ -99,7 +99,9 @@
                 class="no-style"
                 on:click={(e) => {
                   e.preventDefault();
-                  window.open("http://localhost:8080/saved/" + bookmark.id);
+                  window.open(
+                    "http://localhost:8080/saved/" + bookmark.id + "_" + bookmark.last_saved_offline
+                  );
                 }}
               >
                 Open saved copy
