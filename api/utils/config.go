@@ -41,8 +41,9 @@ func (u URLAction) Match(urlStr string) bool {
 }
 
 type Config struct {
-	ShouldSaveOffline bool        `json:"shouldSaveOffline"`
-	URLActions        []URLAction `json:"urlActions,omitempty"`
+	ShouldSaveOffline   bool        `json:"shouldSaveOffline"`   // Save pages offline by default while adding
+	ShouldDeleteOffline bool        `json:"shouldDeleteOffline"` // Delete saved pages by default while deleting
+	URLActions          []URLAction `json:"urlActions,omitempty"`
 }
 
 var config *Config

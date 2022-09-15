@@ -7,6 +7,7 @@
     folders: number[];
   };
   export type Config = {
+    shouldDeleteOffline: boolean;
     shouldSaveOffline: boolean;
     urlActions: URLAction[];
   };
@@ -24,6 +25,7 @@
   import { toast } from "@zerodevx/svelte-toast";
 
   let config: Config = {
+    shouldDeleteOffline: false,
     shouldSaveOffline: false,
     urlActions: [],
   };
@@ -74,13 +76,41 @@
 
     <Route path="/global">
       <div class="row m-b-2">
-        <h3>Save pages offline</h3>
+        <h3>Save offline version of the page to disk when adding bookmarks</h3>
         <input
           class="m-l-auto"
           type="checkbox"
           name="saveOfflineDefault"
           id="saveOfflineDefault"
           bind:checked={config.shouldSaveOffline}
+          on:change={async (e) => {
+            const { checked } = e.currentTarget;
+            try {
+              await api("/config", "PUT", { shouldSaveOffline: checked });
+            } catch (error) {
+              toast.push("Something went wrong.");
+              console.error(error);
+            }
+          }}
+        />
+      </div>
+      <div class="row m-b-2">
+        <h3>Remove saved pages from disk when deleting bookmarks</h3>
+        <input
+          class="m-l-auto"
+          type="checkbox"
+          name="deleteOfflineDefault"
+          id="deleteOfflineDefault"
+          bind:checked={config.shouldDeleteOffline}
+          on:change={async (e) => {
+            const { checked } = e.currentTarget;
+            try {
+              await api("/config", "PUT", { shouldDeleteOffline: checked });
+            } catch (error) {
+              toast.push("Something went wrong.");
+              console.error(error);
+            }
+          }}
         />
       </div>
     </Route>

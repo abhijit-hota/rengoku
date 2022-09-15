@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -338,10 +339,23 @@ func DeleteBookmark(ctx *gin.Context) {
 		return
 	}
 
-	info := db.MustExec("DELETE FROM links WHERE id = ?", uri.ID)
-	numDeleted := utils.MustGet(info.RowsAffected())
+	var lastSavedOffline int64
+	err := db.Get(&lastSavedOffline, "DELETE FROM links WHERE id = ? RETURNING last_saved_offline", uri.ID)
 
-	ctx.JSON(http.StatusOK, gin.H{"deleted": numDeleted == 1})
+	if err != nil {
+		//TODO: Log error
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong"})
+	}
+
+	config := utils.GetConfig()
+
+	if config.ShouldDeleteOffline {
+		err := os.Remove(os.Getenv("SAVE_OFFLINE_PATH") + fmt.Sprint(uri.ID) + "_" + fmt.Sprint(lastSavedOffline))
+		utils.Must(err)
+		// TODO: Some kind of error handling
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"deleted": true})
 }
 
 func BulkDeleteBookmarks(ctx *gin.Context) {
