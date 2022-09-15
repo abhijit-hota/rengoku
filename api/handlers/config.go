@@ -13,9 +13,14 @@ func GetConfig(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, cfg)
 }
 
-func ToggleSaveOffline(ctx *gin.Context) {
+func UpdateConfig(ctx *gin.Context) {
 	cfg := utils.GetConfig()
-	cfg.ShouldSaveOffline = !cfg.ShouldSaveOffline
+
+	if err := ctx.BindJSON(&cfg); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong"})
+		return
+	}
+
 	utils.UpdateConfigFile(cfg)
 
 	ctx.JSON(http.StatusOK, cfg)
@@ -66,5 +71,4 @@ func UpdateURLActions(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusNotModified, gin.H{"message": "No change"})
-	return
 }

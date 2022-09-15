@@ -113,7 +113,7 @@ func CreateServer() *gin.Engine {
 	configRouter := apiRouter.Group("/config")
 	{
 		configRouter.GET("", handlers.GetConfig)
-		configRouter.PATCH("/save-offline", handlers.ToggleSaveOffline)
+		configRouter.PUT("", handlers.UpdateConfig)
 
 		urlActionRouter := configRouter.Group("/url-action")
 		{
