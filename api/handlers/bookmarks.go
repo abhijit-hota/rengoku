@@ -64,6 +64,7 @@ func AddBookmark(ctx *gin.Context) {
 
 	urlActions := config.URLActions
 	shouldSaveOffline := config.ShouldSaveOffline
+
 	for _, urlAction := range urlActions {
 		if urlAction.Match(body.URL) {
 			body.TagIds = append(body.TagIds, urlAction.Tags...)
@@ -71,9 +72,20 @@ func AddBookmark(ctx *gin.Context) {
 			shouldSaveOffline = urlAction.ShouldSaveOffline
 		}
 	}
+	lastSaved := make(chan int64)
+
 	if shouldSaveOffline {
-		filename := strconv.Itoa(int(body.ID))
-		go common.SavePage(body.URL, filename)
+		now := time.Now().Unix()
+		filename := fmt.Sprint(body.ID) + "_" + fmt.Sprint(now)
+		go func() {
+			err := common.SavePage(body.URL, filename)
+			// TODO: error handling
+			if err != nil {
+				lastSaved <- 0
+				return
+			}
+			lastSaved <- now
+		}()
 	}
 
 	var bm BookmarkRes
@@ -100,6 +112,16 @@ func AddBookmark(ctx *gin.Context) {
 	bm.Meta.LinkID = body.ID
 	_, err = tx.NamedExec(stmt, bm.Meta)
 	utils.Must(err)
+
+	if shouldSaveOffline {
+		if savedAt := <-lastSaved; savedAt != 0 {
+			bm.LastSavedOffline = savedAt
+			stmt = "UPDATE links SET last_saved_offline = :last_saved_offline WHERE id = :id"
+
+			_, err = tx.NamedExec(stmt, bm)
+			utils.Must(err)
+		}
+	}
 
 	tx.Commit()
 	ctx.JSON(http.StatusOK, bm)
@@ -387,12 +409,13 @@ func SaveBookmark(ctx *gin.Context) {
 	var bm DB.Bookmark
 	utils.Must(tx.Get(&bm, "SELECT * FROM links WHERE id = ?", uri.ID))
 
-	if err := common.SavePage(bm.URL, fmt.Sprint(uri.ID)); err != nil {
+	savedTs := time.Now().Unix()
+
+	if err := common.SavePage(bm.URL, fmt.Sprint(uri.ID)+"_"+fmt.Sprint(savedTs)); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"saved": false})
 		return
 	}
 
-	savedTs := time.Now().Unix()
 	tx.MustExec("UPDATE links SET last_saved_offline = ? WHERE id = ?", savedTs, uri.ID)
 
 	utils.Must(tx.Commit())

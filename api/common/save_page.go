@@ -25,7 +25,7 @@ func SavePage(url string, name string) error {
 	}
 	fmt.Println("Done archiving.")
 
-	f, err := os.OpenFile(os.Getenv("SAVE_OFFLINE_PATH")+"/"+name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+	f, err := os.OpenFile(os.Getenv("SAVE_OFFLINE_PATH")+name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
