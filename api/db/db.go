@@ -7,11 +7,16 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var db *sqlx.DB
+type DB struct {
+	sqlx.DB
+	Initialized bool
+}
 
-func InitializeDB() (db *sqlx.DB) {
+var db DB
+
+func InitializeDB() (db DB) {
 	dsn := "file:" + os.Getenv("DB_PATH") + "?_pragma=foreign_keys(1)"
-	db = sqlx.MustOpen("sqlite", dsn)
+	db.DB = *sqlx.MustOpen("sqlite", dsn)
 
 	schema := `--sql
 CREATE TABLE IF NOT EXISTS links (
@@ -83,11 +88,12 @@ CREATE TRIGGER IF NOT EXISTS on_folder_remove DELETE ON links_folders
 	END;
 `
 	db.MustExec(schema)
+	db.Initialized = true
 	return db
 }
 
-func GetDB() *sqlx.DB {
-	if db == nil {
+func GetDB() DB {
+	if !db.Initialized {
 		db = InitializeDB()
 	}
 	return db
