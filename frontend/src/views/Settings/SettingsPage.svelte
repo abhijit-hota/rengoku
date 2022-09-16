@@ -1,27 +1,12 @@
-<script context="module" lang="ts">
-  export type URLAction = {
-    pattern: string;
-    matchDetection: string;
-    shouldSaveOffline: boolean;
-    tags: number[];
-    folders: number[];
-  };
-  export type Config = {
-    shouldDeleteOffline: boolean;
-    shouldSaveOffline: boolean;
-    urlActions: URLAction[];
-  };
-</script>
-
 <script lang="ts">
   import { onMount } from "svelte";
 
   import { api } from "@lib";
   import { Route, active, router } from "tinro";
-  import UrlAction from "./URLAction.svelte";
-  import NewUrlAction from "./NewURLAction.svelte";
+  import { URLAction, NewURLAction, type Config } from "./index";
+
   import Fa from "svelte-fa";
-  import { faArrowLeft, faBackward, faHome } from "@fortawesome/free-solid-svg-icons";
+  import { faArrowLeft } from "@icons";
   import { toast } from "@zerodevx/svelte-toast";
 
   let config: Config = {
@@ -120,10 +105,10 @@
       <hr />
       <div>
         {#each config.urlActions || [] as urlAction, i}
-          <UrlAction {urlAction} key={i} on:removeURLAction={removeURLAction} />
+          <URLAction {urlAction} key={i} on:removeURLAction={removeURLAction} />
         {/each}
       </div>
-      <NewUrlAction on:addURLAction={addURLAction} />
+      <NewURLAction on:addURLAction={addURLAction} />
     </Route>
   </div>
 </div>

@@ -7,7 +7,7 @@
 
 <script lang="ts">
   import { store } from "@lib";
-  import { Folder } from "@components";
+  import { Folder } from "./index";
 
   const { folders } = store;
 </script>

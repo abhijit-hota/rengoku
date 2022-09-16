@@ -5,18 +5,15 @@
     faGhost,
     faTags,
     faTrash,
-  } from "@fortawesome/free-solid-svg-icons";
+  } from "@icons";
   import { toast } from "@zerodevx/svelte-toast";
 
-  import { Bookmark, Loader } from "@components";
+  import { Loader, BatchActionButton } from "@components";
   import { api, store } from "@lib";
   import { modals } from "@Modal";
-  import BatchActionButton from "./BatchActionButton.svelte";
   import Fa from "svelte-fa";
-  import AddTagsModal from "./AddTagsModal.svelte";
-  import EditBookmarkModal from "./EditBookmarkModal.svelte";
-  import MoveToFolderModal from "./MoveToFolderModal.svelte";
 
+  import { Bookmark, AddTagsModal, EditBookmarkModal, MoveToFolderModal } from "./index";
   const { bookmarks, queryParams, queryStr, stats } = store;
 
   // UI State

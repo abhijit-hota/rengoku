@@ -4,7 +4,7 @@
 
   import { api, store, errors } from "@lib";
   import Modal, { modals } from "@Modal";
-  import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import { faSpinner } from "@icons";
   import Fa from "svelte-fa";
 
   const { tags } = store;

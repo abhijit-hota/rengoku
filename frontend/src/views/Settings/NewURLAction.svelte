@@ -1,13 +1,13 @@
 <script lang="ts">
-  import UrlAction from "./URLAction.svelte";
   import Fa from "svelte-fa";
-  import { faCheck, faMultiply, faSpinner } from "@fortawesome/free-solid-svg-icons";
-  import type { URLAction } from "./SettingsPage.svelte";
+  import { faCheck, faMultiply, faSpinner } from "@icons";
+  import { URLAction, type URLActionType } from "./index";
+
   import { api } from "@lib";
   import { toast } from "@zerodevx/svelte-toast";
   import { createEventDispatcher } from "svelte";
 
-  let urlAction: URLAction = {
+  let urlAction: URLActionType = {
     pattern: "",
     matchDetection: "",
     shouldSaveOffline: false,
@@ -19,12 +19,12 @@
   let isNewBeingAdded = false;
 
   const dispatch = createEventDispatcher<{
-    addURLAction: { urlAction: URLAction };
+    addURLAction: { urlAction: URLActionType };
   }>();
 </script>
 
 {#if isNewBeingAdded}
-  <UrlAction {urlAction} key={Math.random()} isNew />
+  <URLAction {urlAction} key={Math.random()} isNew />
   <div class="row" style="justify-content: flex-end;">
     <button
       style="margin-right: 1em;"

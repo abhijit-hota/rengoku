@@ -28,13 +28,16 @@
       "@utils/dev": [
         "src/lib/dev-utils.ts"
       ],
+      "@icons": [
+        "node_modules/@fortawesome/free-solid-svg-icons"
+      ]
     }
   },
   "include": [
     "src/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.js",
-    "src/**/*.svelte"
+    "*.svelte"
   ],
   "references": [
     {

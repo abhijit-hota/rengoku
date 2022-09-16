@@ -1,17 +1,21 @@
 <script lang="ts">
-  import "./styles/water.min.css";
-  import "./styles/style.css";
-
   import { SvelteToast } from "@zerodevx/svelte-toast";
   import { router } from "tinro";
 
   import { modals } from "@Modal";
-  import { Filter, BookmarkList, AddBookmarkModal, ImportModal } from "@components";
-  import FolderWrapper from "./components/FolderWrapper.svelte";
-  import { auth, queryParams } from "./lib/stores";
-  import { faGear, faPowerOff } from "@fortawesome/free-solid-svg-icons";
+  import {
+    Filter,
+    BookmarkList,
+    AddBookmarkModal,
+    ImportModal,
+    AllTagsModal,
+    FolderWrapper,
+  } from "./index";
+  import { store } from "@lib";
+  const { auth, queryParams } = store;
+
+  import { faGear, faPowerOff } from "@icons";
   import Fa from "svelte-fa";
-  import AllTagsModal from "./components/AllTagsModal.svelte";
 </script>
 
 <nav>

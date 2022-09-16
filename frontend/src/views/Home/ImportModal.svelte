@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import { faSpinner } from "@icons";
 
   import { api, store } from "@lib";
   const { bookmarks, tags, folders } = store;

@@ -8,14 +8,14 @@
 </script>
 
 <script lang="ts">
-  import { faClockRotateLeft, faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import { faClockRotateLeft, faSpinner } from "@icons";
   import { toast } from "@zerodevx/svelte-toast";
   import Fa from "svelte-fa";
 
   import { api, store } from "@lib";
   const { stats } = store;
 
-  import Popup from "./Popup.svelte";
+  import { Popup } from "@components";
   import { modals } from "@Modal";
 
   export let bookmark: store.Bookmark;

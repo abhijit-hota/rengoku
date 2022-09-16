@@ -5,7 +5,7 @@
 <script lang="ts">
   import { router } from "tinro";
   import Fa from "svelte-fa";
-  import { faInfoCircle, faKey, faSpinner, faUserAlt } from "@fortawesome/free-solid-svg-icons";
+  import { faInfoCircle, faKey, faSpinner, faUserAlt } from "@icons";
 
   import { api, store } from "@lib";
 

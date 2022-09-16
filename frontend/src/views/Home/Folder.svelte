@@ -8,13 +8,12 @@
     faEdit,
     faMultiply,
     faTrash,
-  } from "@fortawesome/free-solid-svg-icons";
+  } from "@icons";
   import { isParent, isExpanded } from "./FolderWrapper.svelte";
-  import type { Tree } from "../lib/stores";
 
   const { queryParams } = store;
 
-  export let tree: Tree = [];
+  export let tree: store.Tree = [];
   export let parentId: number = undefined;
 
   let newFolder = "";
@@ -81,7 +80,9 @@
                     1
                   );
                   tree = tree;
-                } catch (error) {}
+                } catch (error) {
+                  //TODO
+                }
               }}
               title="Delete folder"
             >

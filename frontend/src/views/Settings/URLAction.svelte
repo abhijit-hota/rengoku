@@ -6,18 +6,17 @@
     faPencil,
     faSpinner,
     faTrash,
-  } from "@fortawesome/free-solid-svg-icons";
+  } from "@icons";
 
   import { api, store } from "@lib";
   import { toast } from "@zerodevx/svelte-toast";
   import Fa from "svelte-fa";
 
-  import MultiSelect from "svelte-multiselect";
-  import type { ObjectOption } from "svelte-multiselect";
+  import MultiSelect, { type ObjectOption } from "svelte-multiselect";
 
-  import type { URLAction } from "./SettingsPage.svelte";
+  import type { URLActionType } from "./index";
 
-  export let urlAction: URLAction;
+  export let urlAction: URLActionType;
   export let key: string | number;
   export let isNew = false;
 

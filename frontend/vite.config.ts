@@ -16,6 +16,7 @@ export default defineConfig({
       "@lib": path.resolve(__dirname, "./src/lib"),
       "@Modal": path.resolve(__dirname, "./src/components/Modal.svelte"),
       "@utils/dev": path.resolve(__dirname, "./src/lib/dev-utils"),
+      "@icons": "@fortawesome/free-solid-svg-icons",
     },
   },
   build: {

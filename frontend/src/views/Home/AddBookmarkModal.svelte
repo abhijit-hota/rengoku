@@ -3,54 +3,26 @@
   import type { ObjectOption } from "svelte-multiselect";
   import { api, store, errors } from "@lib";
   import Modal, { modals } from "@Modal";
-  import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+  import { faSpinner } from "@icons";
   import Fa from "svelte-fa";
-  import type { Bookmark } from "../lib/stores";
 
-  const { tags, bookmarks, folders } = store;
+  const { tags, folders } = store;
   const { flattened } = folders;
+
   let status: string;
   let message: string;
+  let url: string;
   let selectedTags: ObjectOption[] = [];
   let selectedFolders: ObjectOption[] = [];
 
-  export let activeBookmarkId: number;
-  let bookmark: Bookmark;
-
-  let updateState: {
-    title?: string;
-    description?: string;
-    tag_ids?: number[];
-    folder_ids?: number[];
-  } = {
-    title: "",
-    description: "",
-    tag_ids: [],
-    folder_ids: [],
-  };
-
-  const setBookmarkAndTags = () => {
-    bookmark = $bookmarks.find(({ id }) => id === activeBookmarkId);
-    selectedTags = bookmark?.tags.map(({ id, name }) => ({ label: name, value: id }));
-    selectedFolders = bookmark?.folders.map((id) => ({
-      label: $flattened.find(({ id: _id }) => id === _id)?.label || "",
-      value: id,
-    }));
-
-    updateState = {
-      title: bookmark.meta.title,
-      description: bookmark.meta.description,
-      tag_ids: bookmark.tags.map(({ id }) => id),
-      folder_ids: bookmark.folders,
-    };
-  };
-
-  $: if (activeBookmarkId) setBookmarkAndTags();
-
   const isNewTag = (tag: ObjectOption) => tag.label == tag.value && typeof tag.value === "string";
-  const updateBookmark = async () => {
+
+  const addBookmark = async () => {
     status = "SUBMITTING";
 
+    selectedTags = selectedTags.map((tag) =>
+      typeof tag === "string" ? { label: tag, value: tag } : tag
+    );
     const newTags = selectedTags.filter(isNewTag);
 
     if (newTags.length > 0) {
@@ -67,33 +39,22 @@
         if (error.cause === errors.NAME_ALREADY_PRESENT) {
           message = "A tag with the same name is already present.";
         }
-        status = "";
         return;
       }
     }
 
     const dataToPost = {
-      title: updateState.title,
-      description: updateState.description,
-      tag_ids: selectedTags.map(({ value }) => value),
-      folder_ids: selectedFolders.map(({ value }) => value),
+      url,
+      tags: selectedTags.map(({ value }) => value),
+      folders: selectedFolders.map(({ value }) => value),
     };
     try {
-      const updatedBookmarkRes = await api("/bookmarks/" + bookmark.id, "PATCH", dataToPost);
+      const newBookmark = await api("/bookmarks", "POST", dataToPost);
       status = "SUCCESS";
-      store.bookmarks.updateOne(bookmark.id, {
-        ...bookmark,
-        meta: {
-          ...bookmark.meta,
-          title: updatedBookmarkRes.title,
-          description: updatedBookmarkRes.description,
-        },
-        last_updated: updatedBookmarkRes.last_updated,
-        tags: $tags.filter(({ id }) => updatedBookmarkRes.tag_ids.includes(id)),
-      });
-      $modals["edit-bookmark"].close();
+      store.bookmarks.add(newBookmark);
+      store.stats.update((val) => ({ ...val, total: val.total + 1 }));
+      $modals["add-bookmark"].close();
     } catch (error) {
-      // TODO
       status = "ERROR";
       if (error.cause === errors.NAME_ALREADY_PRESENT) {
         message = "The same URL is already present.";
@@ -102,31 +63,20 @@
   };
 </script>
 
-<Modal key="edit-bookmark" styles={{ dialog: "width: 600px;" }}>
-  <h2 slot="header">Edit bookmark</h2>
+<Modal key="add-bookmark" styles={{ dialog: "width: 600px;" }}>
+  <h2 slot="header">Add new bookmark</h2>
 
   <div class="col" slot="body">
     <div class="col m-b-1">
-      <label for="title"><strong>Title</strong></label>
+      <label for="url"><strong>URL</strong><span class="red">*</span></label>
       <!-- svelte-ignore a11y-autofocus -->
       <input
         autofocus
-        type="text"
-        bind:value={updateState.title}
-        placeholder="Title"
-        name="title"
-        id="title"
-        required
-      />
-    </div>
-
-    <div class="col m-b-1">
-      <label for="description"><strong>Description</strong></label>
-      <textarea
-        bind:value={updateState.description}
-        placeholder="Description"
-        name="description"
-        id="description"
+        type="url"
+        bind:value={url}
+        placeholder="Add new URL"
+        name="url"
+        id="url"
         required
       />
     </div>
@@ -145,6 +95,7 @@
 
     <div class="col m-b-1">
       <label for="folders"><strong>Folder</strong></label>
+      <!-- TODO: folders tree input -->
       <MultiSelect
         inputClass="input-like"
         outerDivClass="color-fix"
@@ -152,6 +103,7 @@
         options={$flattened.map(({ id, label }) => ({ label, value: id }))}
         bind:selected={selectedFolders}
       />
+      <!-- <FolderSelect bind:selectedFolderId={selectedFolder} /> -->
     </div>
 
     {#if status === "ERROR"}
@@ -162,12 +114,12 @@
     slot="footer"
     class="w-full"
     disabled={status === "SUBMITTING"}
-    on:click={updateBookmark}
+    on:click={addBookmark}
     on:keydown={(e) => {
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
-        updateBookmark();
+        addBookmark();
       }
     }}
     style="margin: 1em 0;"
@@ -175,7 +127,7 @@
     {#if status === "SUBMITTING"}
       <Fa icon={faSpinner} size="lg" spin />
     {:else}
-      Save
+      Add
     {/if}
   </button>
 </Modal>

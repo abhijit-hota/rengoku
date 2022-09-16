@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { faEllipsis } from "@icons";
+  import Fa from "svelte-fa";
   import OutClick from "./OutClick.svelte";
-  import ellipsisIcon from "../assets/ellipsis.png";
 
   let menuOpen = false;
   let focusedID = 0;
@@ -27,7 +28,7 @@
 
 <div class="popup">
   <button id={"menu-button-" + id} class="icon-button" on:click={() => (menuOpen = !menuOpen)}>
-    <img src={ellipsisIcon} alt="Menu" style="filter: invert(1); transform: rotate(90deg);" />
+    <Fa icon={faEllipsis} />
   </button>
   <OutClick
     on:outclick={() => {

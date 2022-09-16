@@ -1,9 +1,5 @@
-export { default as AddBookmarkModal } from "./AddBookmarkModal.svelte";
-export { default as BookmarkList } from "./BookmarkList.svelte";
-export { default as Bookmark } from "./Bookmark.svelte";
-export { default as Counter } from "./Counter.svelte";
-export { default as Filter } from "./Filter.svelte";
-export { default as Folder } from "./Folder.svelte";
-export { default as Nav } from "./Nav.svelte";
-export { default as ImportModal } from "./ImportModal.svelte";
+export { default as BatchActionButton } from "./BatchActionButton.svelte";
 export { default as Loader } from "./Loader.svelte";
+export { default as Modal } from "./Modal.svelte";
+export { default as OutClick } from "./OutClick.svelte";
+export { default as Popup } from "./Popup.svelte";
