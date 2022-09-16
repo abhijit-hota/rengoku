@@ -94,7 +94,7 @@ func AddBookmark(ctx *gin.Context) {
 	bm.Tags = []DB.Tag{}
 
 	for _, tagId := range body.TagIds {
-		tx.MustExec("INSERT INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, body.ID)
+		tx.MustExec("INSERT OR IGNORE INTO links_tags (tag_id, link_id) VALUES (?, ?)", tagId, body.ID)
 
 		var tag DB.Tag
 		err = tx.Get(&tag, "SELECT * FROM tags WHERE id = ?", tagId)
@@ -203,7 +203,7 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 		dbQuery += "\nORDER BY" + " " + sortByColumn + " " + order
 	}
 	// Will optimize when an issue arises
-	dbQuery += "\nLIMIT 20 OFFSET " + strconv.Itoa(20*queryParams.Page)
+	dbQuery += "\nLIMIT 20 OFFSET " + fmt.Sprint(20*queryParams.Page)
 
 	arg := map[string]interface{}{
 		"query":    "%" + queryParams.Search + "%",
@@ -211,8 +211,9 @@ LEFT JOIN tags ON tags.id = links_tags.tag_id
 		"folderID": queryParams.Folder,
 	}
 	query, args, err := sqlx.Named(dbQuery, arg)
-	query, args, err = sqlx.In(query, args...)
+	utils.Must(err)
 
+	query, args, err = sqlx.In(query, args...)
 	utils.Must(err)
 
 	rows, err := db.Queryx(query, args...)

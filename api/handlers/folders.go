@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 
 	DB "github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
@@ -60,8 +59,8 @@ func GetFolders(ctx *gin.Context) {
 	}
 
 	rows, err := db.Queryx(dbQuery, "%"+query.Str+"%")
-	defer rows.Close()
 	utils.Must(err)
+	defer rows.Close()
 
 	folders := make([]DB.Folder, 0)
 	for rows.Next() {
@@ -74,8 +73,6 @@ func GetFolders(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, folders)
 }
-
-var re = regexp.MustCompile(`(.*/|)(\d{1,})/$`)
 
 func CreateFolder(ctx *gin.Context) {
 	db := DB.GetDB()
