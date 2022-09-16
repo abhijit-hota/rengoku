@@ -12,6 +12,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		ctx.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		ctx.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		ctx.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+		if ctx.Request.Method == "OPTIONS" {
+			ctx.AbortWithStatus(204)
+			return
+		}
+		ctx.Next()
+	}
+}
+
 func TokenAuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if ctx.Request.URL.Path == "/api/auth/login" {
@@ -42,6 +57,7 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 
 func CreateServer() *gin.Engine {
 	router := gin.Default()
+	router.Use(CORSMiddleware())
 
 	assets := utils.MustGet(fs.Sub(distFolder, "frontend-dist/assets"))
 	router.StaticFS("assets", http.FS(assets))
