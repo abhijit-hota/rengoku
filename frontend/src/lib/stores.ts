@@ -1,4 +1,4 @@
-import { writable, derived } from "svelte/store";
+import { writable, derived, get } from "svelte/store";
 import type { Writable } from "svelte/store";
 
 import api from "./api";
@@ -162,7 +162,7 @@ const createFolderStore = () => {
       set(res);
     }
   );
-  const { set, subscribe, update } = folders;
+  const { set, subscribe } = folders;
   return {
     subscribe,
     init: async () => {
@@ -175,17 +175,17 @@ const createFolderStore = () => {
       }
     },
     flattened,
-    // add: (...newTags: Tag[]) => {
-    //   update((tags) => [...tags, ...newTags]);
-    // },
-    // delete: (...ids: Tag["id"][]) => {
-    //   update((tags) => {
-    //     return tags.filter(({ id }) => !ids.includes(id));
-    //   });
-    // },
-    // updateOne: (id: Tag["id"], updatedTag: Tag) => {
-    //   update((tags) => tags.map((tag) => (tag.id === id ? { ...tag, ...updatedTag } : tag)));
-    // },
+    getName: (id: number): string => {
+      const rec = (tree: Tree) => {
+        for (let i = 0; i < tree?.length ?? 0; i++) {
+          if (tree[i].id === id) {
+            return tree[i].name;
+          }
+          rec(tree[i].children);
+        }
+      };
+      return rec(get(folders));
+    },
   };
 };
 

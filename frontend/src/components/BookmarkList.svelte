@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { faFolderPlus, faGhost, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+  import {
+    faFolder,
+    faFolderPlus,
+    faGhost,
+    faTags,
+    faTrash,
+  } from "@fortawesome/free-solid-svg-icons";
   import { toast } from "@zerodevx/svelte-toast";
 
   import { Bookmark, Loader } from "@components";
@@ -83,8 +89,11 @@
       {#if $bookmarks.length > 0}
         <hr />
         <span
-          >Showing {$bookmarks.length} of {$stats.total} bookmark{$stats.total > 1 ? "s" : ""}</span
-        >
+          >Showing {$bookmarks.length} of {$stats.total} bookmark{$stats.total > 1 ? "s" : ""}
+          {#if $queryParams.folder !== ""}
+            in <Fa icon={faFolder} /> <b>{store.folders.getName(+$queryParams.folder)}</b>
+          {/if}
+        </span>
       {/if}
     </div>
     <div class="m-l-auto">
