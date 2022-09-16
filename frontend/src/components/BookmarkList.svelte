@@ -165,12 +165,7 @@
   Error
 {:else if $bookmarks.length > 0}
   {#each $bookmarks as bookmark (bookmark.id)}
-      <Bookmark
-        {bookmark}
-        {toggleMark}
-        checked={marked.includes(bookmark.id)}
-        bind:activeBookmark
-      />
+    <Bookmark {bookmark} {toggleMark} checked={marked.includes(bookmark.id)} bind:activeBookmark />
   {/each}
 {:else}
   <div id="not-found">
@@ -184,7 +179,7 @@
   <div style="text-align: center;" on:click={() => $queryParams.page++}>
     <button>Load More</button>
   </div>
-{:else}
+{:else if $bookmarks.length > 0}
   <div style="text-align: center; opacity: 0.5;">
     <hr />
     <span style="font-weight: bold;">End of list</span>
