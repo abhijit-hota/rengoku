@@ -1,9 +1,9 @@
 package db
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/abhijit-hota/rengoku/server/utils/log"
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
@@ -22,7 +22,7 @@ func InitializeDB() (db DB) {
 	db.DB = *sqlx.MustOpen("sqlite", dsn)
 
 	if err := migrateToLatest(db.DB.DB); err != nil {
-		panic(fmt.Errorf("not migrated: %w", err))
+		log.Error.Fatalf("Failed to migrate DB: %v", err)
 	}
 
 	db.Initialized = true

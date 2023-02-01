@@ -4,13 +4,13 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
 
 	"github.com/abhijit-hota/rengoku/server/db"
 	"github.com/abhijit-hota/rengoku/server/utils"
+	"github.com/abhijit-hota/rengoku/server/utils/log"
 	"github.com/shirou/gopsutil/v3/process"
 
 	"github.com/joho/godotenv"
@@ -48,7 +48,7 @@ func RunSubcommand() {
 		utils.Must(err)
 
 		if status, err := proc.Status(); err != nil || status[0] == "zombie" {
-			log.Fatal("Couldn't start server.")
+			log.Error.Printf("couldn't start server: %v", err)
 		}
 
 		err = os.WriteFile(rengokuPath+"maby.pid", []byte(fmt.Sprint(cmd.Process.Pid)), 0644)
@@ -58,18 +58,18 @@ func RunSubcommand() {
 	case "stop":
 		pid, err := os.ReadFile(rengokuPath + "maby.pid")
 		if os.IsNotExist(err) {
-			log.Fatal("It's not even started brah")
+			log.Error.Printf("rengoku not started: %v", err)
 		}
 
 		pidNo := int32(utils.MustGet(strconv.Atoi(string(pid))))
 		mabyProc, err := process.NewProcess(pidNo)
 		if err != nil {
-			log.Fatal("You killed it yourself didn't you?")
+			log.Error.Printf("you killed it yourself didn't you?: %v", err)
 		}
 
 		mabyProc.Terminate()
 		os.Remove(rengokuPath + "maby.pid")
-		fmt.Println("Closed.")
+		log.Info.Println("Closed.")
 
 		return
 	case "export":
@@ -79,6 +79,8 @@ func RunSubcommand() {
 }
 
 func main() {
+
+	// log.CreateLogger()
 
 	if len(os.Args) == 2 {
 		RunSubcommand()

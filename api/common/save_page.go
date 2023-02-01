@@ -2,9 +2,9 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"os"
 
+	"github.com/abhijit-hota/rengoku/server/utils/log"
 	"github.com/go-shiori/obelisk"
 )
 
@@ -17,13 +17,13 @@ func SavePage(url string, name string) error {
 	}
 	arc.Validate()
 
-	fmt.Println("Started archiving.")
+	log.Info.Printf("Started archiving: (%s)", url)
 
 	result, _, err := arc.Archive(context.Background(), req)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Done archiving.")
+	log.Info.Printf("Done archiving: (%s)", url)
 
 	f, err := os.OpenFile(os.Getenv("SAVE_OFFLINE_PATH")+name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
@@ -35,7 +35,7 @@ func SavePage(url string, name string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Saved to file.")
+	log.Info.Printf("Saved to file: (%s)", url)
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/abhijit-hota/rengoku/server/utils/log"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -37,11 +38,11 @@ func migrateToLatest(db *sql.DB) error {
 	defer func(m *migrate.Migrate) {
 		srcErr, dbErr := m.Close()
 		if srcErr != nil {
-			fmt.Printf("failed to close migration source: %v", srcErr)
+			log.Error.Printf("failed to close migration source: %v", srcErr)
 		}
 
 		if dbErr != nil {
-			fmt.Printf("failed to close migration target: %v", dbErr)
+			log.Error.Printf("failed to close migration target: %v", dbErr)
 		}
 
 	}(migrationClient)
@@ -53,7 +54,7 @@ func migrateToLatest(db *sql.DB) error {
 
 	// Get the current version of the database and print it
 	version, _, _ := migrationClient.Version()
-	fmt.Printf("[INFO]: Successfully migrated DB to latest version: %v", version)
+	log.Info.Printf("Successfully migrated DB to latest version: %v", version)
 
 	return nil
 }
