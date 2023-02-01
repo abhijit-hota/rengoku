@@ -56,7 +56,12 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 }
 
 func CreateServer() *gin.Engine {
+
+	if os.Getenv("ENVIRONMENT") == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 	router.Use(CORSMiddleware())
 
 	assets := utils.MustGet(fs.Sub(distFolder, "frontend-dist/assets"))
